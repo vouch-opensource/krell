@@ -9,10 +9,10 @@
 (defn setup
   "Sets up mDNS to populate atom supplied in name-endpoint-map with discoveries.
   Returns a function that will tear down mDNS."
-  [{:keys [reg-type endpoint-map match-name]}]
-  {:pre [(string? reg-type)]
-   :post [(fn? %)]}
-  (let [mdns-service (JmDNS/create)
+  [{:keys [type protocol domain endpoint-map match-name]}]
+  {:post [(fn? %)]}
+  (let [reg-type (str "_" type "._" protocol "." domain)
+        mdns-service (JmDNS/create)
         service-listener
         (reify ServiceListener
           (serviceAdded [_ service-event]

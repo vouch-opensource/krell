@@ -7,7 +7,9 @@
   (def ep-map (atom {}))
 
   (mdns/setup
-    {:reg-type "_http._tcp.local."
+    {:type "http"
+     :protocol "tcp"
+     :domain "local."
      :endpoint-map ep-map
      :match-name rn-repl?})
 
