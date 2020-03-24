@@ -67,7 +67,7 @@
   (try
     (let [res (read-response in)]
       (try
-        (let [{:keys [type repl value] :or {repl "main"} :as event}
+        (let [{:keys [type value] :as event}
               (json/read-str res :key-fn keyword)]
           (case type
             "result"
