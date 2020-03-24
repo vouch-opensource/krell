@@ -21,7 +21,7 @@ zeroconf.on('resolved', service => {
 
 zeroconf.scan('http', 'tcp', 'local.');
 
-zeroconf.publishService('http', 'tcp', 'local.', 'rn.repl', 5001);
+zeroconf.publishService('http', 'tcp', 'local.', 'rn.repl', 5002);
 
 // =============================================================================
 // REPL Server
@@ -104,7 +104,7 @@ var server = TcpSocket.createServer(function(socket) {
   socket.on('close', error => {
     console.log('Closed connection with ', socket.address());
   });
-}).listen({port: 5001, host: 'localhost'});
+}).listen({port: 5002, host: 'localhost'});
 
 server.on('error', error => {
   console.log('An error ocurred with the server', error);
