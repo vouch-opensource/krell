@@ -44,6 +44,7 @@
 (defn rn-eval
   "Evaluate a JavaScript string in the React Native REPL"
   [repl-env js]
+  (println "RN-EVAL:" js)
   (let [{:keys [out]} @(:socket repl-env)]
     (write out (json/write-str {:type "eval" :form js}))
     (let [result (.take results)]
@@ -85,14 +86,17 @@
   ([{:keys [host port socket state] :as repl-env} opts]
    (when-not @socket
      (loop [r nil]
+       (println "r >>>>>" r)
        (when-not (= r "ready")
          (Thread/sleep 50)
          (try
            (reset! socket (create-socket host port))
-           (catch Exception e))
+           (catch Exception e
+             (println e)))
          (if @socket
            (recur (read-response (:in @socket)))
            (recur nil))))
+     (println "start event loop")
      (.start (Thread. (bound-fn [] (event-loop (:in @socket)))))
      ;; compile cljs.core & its dependencies, goog/base.js must be available
      ;; for bootstrap to load, use new closure/compile as it can handle
@@ -120,14 +124,15 @@
        (rn-eval repl-env
          (str "goog.isProvided_ = function(x) { return false; };"))
        ;; load cljs.core, setup printing
-       (repl/evaluate-form repl-env env "<cljs repl>"
-         '(do
-            (.require js/goog "cljs.core")
-            (enable-console-print!)))
-       (bootstrap/install-repl-goog-require repl-env env)
-       (rn-eval repl-env
-         (str "goog.global.CLOSURE_UNCOMPILED_DEFINES = "
-           (json/write-str (:closure-defines opts)) ";"))))))
+       ;(repl/evaluate-form repl-env env "<cljs repl>"
+       ;  '(do
+       ;     (.require js/goog "cljs.core")
+       ;     (enable-console-print!)))
+       ;(bootstrap/install-repl-goog-require repl-env env)
+       ;(rn-eval repl-env
+       ;  (str "goog.global.CLOSURE_UNCOMPILED_DEFINES = "
+       ;    (json/write-str (:closure-defines opts)) ";"))
+       (println "SETUP DONE")))))
 
 (defrecord ReactNativeEnv [host port path socket state]
   repl/IReplEnvOptions
