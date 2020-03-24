@@ -35,27 +35,27 @@ var server = TcpSocket.createServer(function(socket) {
   socket.write('\0');
 
   socket.on('data', data => {
-    if (data[data.length - 1] != '\0') {
+    if (data[data.length - 1] != 0) {
+      console.log("INCOMPLETE ", data[data.length - 1]);
       buffer += data;
     } else {
-      if (buffer.length > 0) {
-        data = buffer + data;
-        buffer = '';
-      }
+      data = buffer + data;
+      buffer = '';
 
       if (data) {
-        // not sure how \0's are getting through - David
         data = data.replace(/\0/g, '');
 
         if (data === ':cljs/quit') {
           server.close();
           return;
         } else {
+          console.log("EVAL");
           try {
             var obj = JSON.parse(data);
             repl = obj.repl;
             ret = eval(obj.form);
           } catch (e) {
+            console.error(e);
             err = e;
           }
         }
