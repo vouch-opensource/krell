@@ -151,12 +151,21 @@
         (close-socket sock)))))
 
 (defn repl-env* [options]
-  (let [{:keys [host port path]}
-        (merge
-          {:host "localhost"
-           :port 5002}
-          options)]
-    (ReactNativeEnv. host port path (atom nil) (atom nil))))
+  (let [ep-map  (atom {})]
+    (mdns/setup
+      {:type         "http"
+       :protocol     "tcp"
+       :domain       "local."
+       :endpoint-map ep-map
+       :match-name   mdns/rn-repl?})
+    (let [default (mdns/choose-default @ep-map)
+          {:keys [host port path]}
+          (merge
+            {:host "localhost"
+             :port 5002}
+            default
+            options)]
+     (ReactNativeEnv. host port path (atom nil) (atom nil)))))
 
 (defn repl-env
   "Construct a React Native evaluation environment."
