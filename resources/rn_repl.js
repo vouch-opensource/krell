@@ -31,6 +31,9 @@ var server = TcpSocket.createServer(function(socket) {
       ret    = null,
       err    = null;
 
+  socket.write('ready');
+  socket.write('\0');
+
   socket.on('data', data => {
     if (data[data.length - 1] != '\0') {
       buffer += data;
