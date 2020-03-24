@@ -1,5 +1,6 @@
 (ns cljs.repl.rn
-  (:require [cljs.closure :as closure]
+  (:require [cljs.analyzer :as ana]
+            [cljs.closure :as closure]
             [cljs.compiler :as comp]
             [cljs.repl :as repl]
             [cljs.repl.bootstrap :as bootstrap]
@@ -96,35 +97,36 @@
      ;; for bootstrap to load, use new closure/compile as it can handle
      ;; resources in JARs
      (let [output-dir (io/file (util/output-directory opts))
-           core (io/resource "cljs/core.cljs")
-           core-js (closure/compile core
-                     (assoc opts :output-file
-                                 (closure/src-file->target-file
-                                   core (dissoc opts :output-dir))))
-           deps (closure/add-dependencies opts core-js)]
+           core       (io/resource "cljs/core.cljs")
+           core-js    (closure/compile core
+                        (assoc opts :output-file
+                          (closure/src-file->target-file
+                            core (dissoc opts :output-dir))))
+           deps       (closure/add-dependencies opts core-js)
+           env        (ana/empty-env)]
        ;; output unoptimized code and the deps file
        ;; for all compiled namespaces
        (apply closure/output-unoptimized
          (assoc opts
            :output-to (.getPath (io/file output-dir "rn_repl_deps.js")))
-         deps))
-     ;; TODO: React Native Import
-     (rn-eval repl-env
-       (str "require("
-         (platform-path (conj root-path "rn_repl_deps.js"))
-         ")"))
-     ;; monkey-patch isProvided_ to avoid useless warnings - David
-     (rn-eval repl-env
-       (str "goog.isProvided_ = function(x) { return false; };"))
-     ;; load cljs.core, setup printing
-     (repl/evaluate-form repl-env env "<cljs repl>"
-       '(do
-          (.require js/goog "cljs.core")
-          (enable-console-print!)))
-     (bootstrap/install-repl-goog-require repl-env env)
-     (rn-eval repl-env
-       (str "goog.global.CLOSURE_UNCOMPILED_DEFINES = "
-         (json/write-str (:closure-defines opts)) ";")))))
+         deps)
+       ;; TODO: React Native Import
+       ;(rn-eval repl-env
+       ;  (str "require("
+       ;    (platform-path (conj root-path "rn_repl_deps.js"))
+       ;    ")"))
+       ;; monkey-patch isProvided_ to avoid useless warnings - David
+       (rn-eval repl-env
+         (str "goog.isProvided_ = function(x) { return false; };"))
+       ;; load cljs.core, setup printing
+       (repl/evaluate-form repl-env env "<cljs repl>"
+         '(do
+            (.require js/goog "cljs.core")
+            (enable-console-print!)))
+       (bootstrap/install-repl-goog-require repl-env env)
+       (rn-eval repl-env
+         (str "goog.global.CLOSURE_UNCOMPILED_DEFINES = "
+           (json/write-str (:closure-defines opts)) ";"))))))
 
 (defrecord ReactNativeEnv [host port path socket proc state]
   repl/IReplEnvOptions
