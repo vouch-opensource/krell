@@ -1,5 +1,6 @@
 (ns cljs.repl.rn
   (:require [cljs.analyzer :as ana]
+            [cljs.cli :as cli]
             [cljs.closure :as closure]
             [cljs.compiler :as comp]
             [cljs.repl :as repl]
@@ -128,7 +129,7 @@
          (str "goog.global.CLOSURE_UNCOMPILED_DEFINES = "
            (json/write-str (:closure-defines opts)) ";"))))))
 
-(defrecord ReactNativeEnv [host port path socket proc state]
+(defrecord ReactNativeEnv [host port path socket state]
   repl/IReplEnvOptions
   (-repl-options [this]
     {:output-dir ".cljs_rn_repl"
@@ -148,6 +149,22 @@
       (when-not (.isClosed (:socket sock))
         (write (:out sock) ":cljs/quit")
         (close-socket sock)))))
+
+(defn repl-env* [options]
+  (let [{:keys [host port path]}
+        (merge
+          {:host "localhost"
+           :port 5002}
+          options)]
+    (ReactNativeEnv. host port path (atom nil) (atom nil))))
+
+(defn repl-env
+  "Construct a React Native evaluation environment."
+  [& {:as options}]
+  (repl-env* options))
+
+(defn -main [& args]
+  (apply cli/main repl-env args))
 
 (comment
 
