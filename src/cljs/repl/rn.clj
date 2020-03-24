@@ -188,4 +188,6 @@
 
   (mdns/choose-default @ep-map)
 
+  (cljs.repl/repl* (repl-env) {})
+
   )
