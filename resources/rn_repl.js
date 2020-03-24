@@ -49,15 +49,12 @@ var server = TcpSocket.createServer(function(socket) {
 
         if (data === ':cljs/quit') {
           server.close();
-          socket.unref();
           return;
         } else {
           try {
-            dom.run(function() {
-              var obj = JSON.parse(data);
-              repl = obj.repl;
-              ret = eval(obj.form);
-            });
+            var obj = JSON.parse(data);
+            repl = obj.repl;
+            ret = eval(obj.form);
           } catch (e) {
             err = e;
           }
