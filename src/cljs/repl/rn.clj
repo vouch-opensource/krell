@@ -1,6 +1,5 @@
 (ns cljs.repl.rn
-  (:require [clojure.string :as string]
-            [cljs.repl.rn.mdns :as mdns]))
+  (:require [cljs.repl.rn.mdns :as mdns]))
 
 (comment
 
