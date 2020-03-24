@@ -4,7 +4,6 @@ import Zeroconf from 'react-native-zeroconf';
 // =============================================================================
 // ZeroConf Service Publication / Discovery
 
-var repl = null;
 const zeroconf = new Zeroconf();
 
 zeroconf.on('start', () => {
@@ -36,7 +35,6 @@ var server = TcpSocket.createServer(function(socket) {
 
   socket.on('data', data => {
     if (data[data.length - 1] != 0) {
-      console.log("INCOMPLETE ", data[data.length - 1]);
       buffer += data;
     } else {
       data = buffer + data;
@@ -49,10 +47,8 @@ var server = TcpSocket.createServer(function(socket) {
           server.close();
           return;
         } else {
-          console.log("EVAL");
           try {
             var obj = JSON.parse(data);
-            repl = obj.repl;
             ret = eval(obj.form);
           } catch (e) {
             console.error(e);
@@ -65,7 +61,6 @@ var server = TcpSocket.createServer(function(socket) {
         socket.write(
           JSON.stringify({
             type: 'result',
-            repl: repl,
             status: 'exception',
             value: cljs.repl.error__GT_str(err),
           }),
@@ -74,7 +69,6 @@ var server = TcpSocket.createServer(function(socket) {
         socket.write(
           JSON.stringify({
             type: 'result',
-            repl: repl,
             status: 'success',
             value: ret.toString(),
           }),
@@ -83,7 +77,6 @@ var server = TcpSocket.createServer(function(socket) {
         socket.write(
           JSON.stringify({
             type: 'result',
-            repl: repl,
             status: 'success',
             value: null,
           }),
