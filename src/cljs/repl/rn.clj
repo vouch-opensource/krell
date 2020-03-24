@@ -175,8 +175,8 @@
      :protocol "tcp"
      :domain "local."
      :endpoint-map ep-map
-     :match-name rn-repl?})
+     :match-name mdns/rn-repl?})
 
-  @ep-map
+  (mdns/choose-default @ep-map)
 
   )

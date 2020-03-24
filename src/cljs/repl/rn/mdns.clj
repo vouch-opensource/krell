@@ -6,6 +6,10 @@
 (defn rn-repl? [name]
   (string/starts-with? name "rn.repl"))
 
+;; TODO: allow users to choose a la Ambly
+(defn choose-default [endpoint-map]
+  (-> endpoint-map first second))
+
 (defn setup
   "Sets up mDNS to populate atom supplied in name-endpoint-map with discoveries.
   Returns a function that will tear down mDNS."
