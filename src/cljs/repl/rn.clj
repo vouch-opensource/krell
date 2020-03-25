@@ -116,8 +116,9 @@
          (assoc opts
            :output-to (.getPath (io/file output-dir "rn_repl_deps.js")))
          deps)
-       ;; need to define CLOSURE_IMPORT_SCRIPT
-       ;; CLOSURE_LOAD_FILE_SYNC optional, need only for transpile
+       ;; TODO: set CLOSURE_NO_DEPS
+       ;; TODO: need to define CLOSURE_IMPORT_SCRIPT
+       ;; NOTE: CLOSURE_LOAD_FILE_SYNC optional, need only for transpile
        (rn-eval repl-env
          (slurp (io/resource "goog/base.js")))
        ;; TODO: React Native Import
