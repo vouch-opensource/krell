@@ -25,20 +25,24 @@ zeroconf.publishService('http', 'tcp', 'local.', 'rn.repl', 5002);
 // =============================================================================
 // REPL Server
 
-// For CLOSURE_IMPORT_SCRIPT
-var loadFile = function(socket, ns) {
-  var path = goog.debugLoader_.getPathFromDeps(ns);
+var loadFileSocket = null;
 
-  if(path) {
-    var req = {
-      type: "load-file",
-      value: goog.basePath + path
-    };
-    socket.write(JSON.stringify(req));
-    socket.write('\0');
+var loadFile = function(socket, path) {
+  var req = {
+    type: "load-file",
+    value: path
+  };
+  socket.write(JSON.stringify(req));
+  socket.write('\0');
+};
+
+global.CLOSURE_IMPORT_SCRIPT = function(path, optContents) {
+  if (optContents) {
+    eval(optContents);
     return true;
   } else {
-    return false
+    loadFile(loadFileSocket, path, optContents);
+    return true;
   }
 };
 
@@ -46,6 +50,9 @@ var server = TcpSocket.createServer(function(socket) {
   var buffer = '',
       ret    = null,
       err    = null;
+
+  // it doesn't matter which socket we use for loads
+  loadFileSocket = socket;
 
   socket.write('ready');
   socket.write('\0');
