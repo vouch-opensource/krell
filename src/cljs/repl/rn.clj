@@ -115,14 +115,18 @@
          (assoc opts
            :output-to (.getPath (io/file output-dir "rn_repl_deps.js")))
          deps)
+       ;; need to define CLOSURE_IMPORT_SCRIPT
+       ;; CLOSURE_LOAD_FILE_SYNC optional, need only for transpile
+       (rn-eval repl-env
+         (slurp (io/resource "goog/base.js")))
        ;; TODO: React Native Import
        ;(rn-eval repl-env
        ;  (str "require("
        ;    (platform-path (conj root-path "rn_repl_deps.js"))
        ;    ")"))
        ;; monkey-patch isProvided_ to avoid useless warnings - David
-       (rn-eval repl-env
-         (str "goog.isProvided_ = function(x) { return false; };"))
+       ;(rn-eval repl-env
+       ;  (str "goog.isProvided_ = function(x) { return false; };"))
        ;; load cljs.core, setup printing
        ;(repl/evaluate-form repl-env env "<cljs repl>"
        ;  '(do
