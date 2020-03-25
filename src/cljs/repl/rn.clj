@@ -13,7 +13,9 @@
            [java.net Socket]
            [java.util.concurrent LinkedBlockingQueue]))
 
-(def results (LinkedBlockingQueue.))
+(def eval-lock (Object.))
+(def results-queue (LinkedBlockingQueue.))
+(def load-queue (LinkedBlockingQueue.))
 
 (defn create-socket [^String host port]
   (let [socket (Socket. host (int port))
@@ -44,17 +46,18 @@
 (defn rn-eval
   "Evaluate a JavaScript string in the React Native REPL"
   [repl-env js]
-  (let [{:keys [out]} @(:socket repl-env)]
-    (write out (json/write-str {:type "eval" :form js}))
-    (let [result (.take results)]
-      (condp = (:status result)
-        "success"
-        {:status :success
-         :value (:value result)}
+  (locking eval-lock
+    (let [{:keys [out]} @(:socket repl-env)]
+      (write out (json/write-str {:type "eval" :form js}))
+      (let [result (.take results-queue)]
+        (condp = (:status result)
+          "success"
+          {:status :success
+           :value  (:value result)}
 
-        "exception"
-        {:status :exception
-         :value (:value result)}))))
+          "exception"
+          {:status :exception
+           :value  (:value result)})))))
 
 (defn load-javascript
   "Load a Closure JavaScript file into the React Native REPL"
@@ -70,9 +73,9 @@
           (let [{:keys [type value] :as event}
                 (json/read-str res :key-fn keyword)]
             (println "EVENT LOOP:" event)
-            ;; TODO: add load file
             (case type
-              "result" (.offer results event)
+              "load-file" (.offer load-queue event)
+              "result"    (.offer results-queue event)
               (when-let [stream (if (= type "out") *out* *err*)]
                 (.write stream value 0 (.length ^String value))
                 (.flush stream))))
@@ -116,8 +119,9 @@
            :output-to (.getPath repl-deps))
          deps)
        ;; prevent auto-loading of deps.js
+       (println ">>>>> set NO DEPS")
        (rn-eval repl-env
-         "global.CLOSURE_NO_DEPS = true;")
+         "var CLOSURE_NO_DEPS = true;")
        ;; NOTE: CLOSURE_LOAD_FILE_SYNC optional, need only for transpile
        (println ">>>>> load goog/base.js")
        (rn-eval repl-env
@@ -131,10 +135,10 @@
        (rn-eval repl-env
          (str "goog.isProvided_ = function(x) { return false; };"))
        ; load cljs.core, setup printing
-       ;(repl/evaluate-form repl-env env "<cljs repl>"
-       ;  '(do
-       ;     (.require js/goog "cljs.core")
-       ;     (enable-console-print!)))
+       (rn-eval repl-env
+         (slurp (io/file (:output-dir opts) "cljs" "core.js")))
+       (repl/evaluate-form repl-env env "<cljs repl>"
+         '(enable-console-print!))
        ;(bootstrap/install-repl-goog-require repl-env env)
        ;(rn-eval repl-env
        ;  (str "goog.global.CLOSURE_UNCOMPILED_DEFINES = "
