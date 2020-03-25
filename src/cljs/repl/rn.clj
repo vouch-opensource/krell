@@ -65,7 +65,7 @@
   (rn-eval repl-env
     (str "goog.require('" (comp/munge (first provides)) "')")))
 
-(defn event-loop [state in]
+(defn event-loop [{:keys [state] :as repl-env} in]
   (while (not (:done @state))
     (try
       (let [res (read-response in)]
@@ -85,6 +85,12 @@
       (catch IOException e
         (.printStackTrace e *err*)))))
 
+(defn load-file-loop [{:keys [state] :as repl-env}]
+  (while (not (:done @state))
+    (let [{:keys [value] :as load-file-req} (.take load-queue)]
+      (println "LOAD FILE:" value)
+      (rn-eval repl-env (slurp (io/file value))))))
+
 (defn setup
   ([repl-env] (setup repl-env nil))
   ([{:keys [host port socket state] :as repl-env} opts]
@@ -99,7 +105,8 @@
          (if @socket
            (recur (read-response (:in @socket)))
            (recur nil))))
-     (.start (Thread. (bound-fn [] (event-loop state (:in @socket)))))
+     (.start (Thread. (bound-fn [] (event-loop repl-env (:in @socket)))))
+     (.start (Thread. (bound-fn [] (load-file-loop repl-env))))
      ;; compile cljs.core & its dependencies, goog/base.js must be available
      ;; for bootstrap to load, use new closure/compile as it can handle
      ;; resources in JARs
@@ -119,26 +126,25 @@
            :output-to (.getPath repl-deps))
          deps)
        ;; prevent auto-loading of deps.js
-       (println ">>>>> set NO DEPS")
        (rn-eval repl-env
          "var CLOSURE_NO_DEPS = true;")
+       (rn-eval repl-env
+         (str "var CLOSURE_BASE_PATH = \""
+           (.getPath (io/file (:output-dir opts) "goog")) File/separator "\";"))
        ;; NOTE: CLOSURE_LOAD_FILE_SYNC optional, need only for transpile
-       (println ">>>>> load goog/base.js")
        (rn-eval repl-env
          (slurp (io/resource "goog/base.js")))
-       (println ">>>>> load goog/deps.js")
        (rn-eval repl-env
          (slurp (io/resource "goog/deps.js")))
        (rn-eval repl-env (slurp repl-deps))
-       (println ">>>>> loaded basics")
        ;; monkey-patch isProvided_ to avoid useless goog library warnings
        (rn-eval repl-env
          (str "goog.isProvided_ = function(x) { return false; };"))
        ; load cljs.core, setup printing
-       (rn-eval repl-env
-         (slurp (io/file (:output-dir opts) "cljs" "core.js")))
        (repl/evaluate-form repl-env env "<cljs repl>"
-         '(enable-console-print!))
+         '(do
+            (.require js/goog "cljs.core")
+            (enable-console-print!)))
        ;(bootstrap/install-repl-goog-require repl-env env)
        ;(rn-eval repl-env
        ;  (str "goog.global.CLOSURE_UNCOMPILED_DEFINES = "
