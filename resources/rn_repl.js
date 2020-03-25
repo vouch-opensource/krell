@@ -61,6 +61,8 @@ var server = TcpSocket.createServer(function(socket) {
   socket.write('ready');
   socket.write('\0');
 
+  // TODO: I/O forwarding
+
   socket.on('data', data => {
     if (data[data.length - 1] != 0) {
       buffer += data;
