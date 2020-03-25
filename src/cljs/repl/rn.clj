@@ -120,7 +120,8 @@
        ;; NOTE: CLOSURE_LOAD_FILE_SYNC optional, need only for transpile
        (rn-eval repl-env
          (slurp (io/resource "goog/base.js")))
-       ;; TODO: load deps.js
+       (rn-eval repl-env
+         (slurp (io/resource "goog/deps.js")))
        ;; TODO: load cljs.core
        ;(rn-eval repl-env
        ;  (str "require("
