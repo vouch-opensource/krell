@@ -89,7 +89,8 @@
   (while (not (:done @state))
     (let [{:keys [value] :as load-file-req} (.take load-queue)]
       (println "LOAD FILE:" value)
-      (rn-eval repl-env (slurp (io/file value))))))
+      (rn-eval repl-env (slurp (io/file value)))
+      (println "LOADED:" value))))
 
 (defn setup
   ([repl-env] (setup repl-env nil))
@@ -142,9 +143,10 @@
          (str "goog.isProvided_ = function(x) { return false; };"))
        ; load cljs.core, setup printing
        (repl/evaluate-form repl-env env "<cljs repl>"
-         '(do
-            (.require js/goog "cljs.core")
-            (enable-console-print!)))
+         '(.require js/goog "cljs.core"))
+       ;; TODO: merge back w/ the above when file loading is sorted out
+       ;(repl/evaluate-form repl-env env "<cljs repl>"
+       ;  '(enable-console-print!))
        ;(bootstrap/install-repl-goog-require repl-env env)
        ;(rn-eval repl-env
        ;  (str "goog.global.CLOSURE_UNCOMPILED_DEFINES = "
