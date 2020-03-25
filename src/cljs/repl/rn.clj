@@ -95,7 +95,6 @@
          (if @socket
            (recur (read-response (:in @socket)))
            (recur nil))))
-     (println "start event loop")
      (.start (Thread. (bound-fn [] (event-loop (:in @socket)))))
      ;; compile cljs.core & its dependencies, goog/base.js must be available
      ;; for bootstrap to load, use new closure/compile as it can handle
