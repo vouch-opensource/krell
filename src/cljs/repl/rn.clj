@@ -44,7 +44,6 @@
 (defn rn-eval
   "Evaluate a JavaScript string in the React Native REPL"
   [repl-env js]
-  (println "RN-EVAL:" js)
   (let [{:keys [out]} @(:socket repl-env)]
     (write out (json/write-str {:type "eval" :form js}))
     (let [result (.take results)]
@@ -87,7 +86,6 @@
   ([{:keys [host port socket state] :as repl-env} opts]
    (when-not @socket
      (loop [r nil]
-       (println "r >>>>>" r)
        (when-not (= r "ready")
          (Thread/sleep 50)
          (try
@@ -116,12 +114,15 @@
          (assoc opts
            :output-to (.getPath (io/file output-dir "rn_repl_deps.js")))
          deps)
-       ;; TODO: set CLOSURE_NO_DEPS
+       ;; prevent auto-loading of deps.js
+       (rn-eval repl-env
+         "global.CLOSURE_NO_DEPS = true;")
        ;; TODO: need to define CLOSURE_IMPORT_SCRIPT
        ;; NOTE: CLOSURE_LOAD_FILE_SYNC optional, need only for transpile
        (rn-eval repl-env
          (slurp (io/resource "goog/base.js")))
-       ;; TODO: React Native Import
+       ;; TODO: load deps.js
+       ;; TODO: load cljs.core
        ;(rn-eval repl-env
        ;  (str "require("
        ;    (platform-path (conj root-path "rn_repl_deps.js"))
