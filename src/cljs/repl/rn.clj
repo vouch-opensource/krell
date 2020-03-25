@@ -69,6 +69,7 @@
       (try
         (let [{:keys [type value] :as event}
               (json/read-str res :key-fn keyword)]
+          ;; TODO: add load file
           (case type
             "result"
             (.offer results event)
