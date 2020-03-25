@@ -1,6 +1,10 @@
 import TcpSocket from 'react-native-tcp-socket';
 import Zeroconf from 'react-native-zeroconf';
 
+// Boostrap for Google Closure Library
+global.goog = {};
+var evaluate = eval;
+
 // =============================================================================
 // ZeroConf Service Publication / Discovery
 
@@ -73,7 +77,7 @@ var server = TcpSocket.createServer(function(socket) {
         } else {
           try {
             var obj = JSON.parse(data);
-            ret = eval(obj.form);
+            ret = evaluate(obj.form);
           } catch (e) {
             console.error(e);
             err = e;
