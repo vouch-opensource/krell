@@ -62,24 +62,25 @@
   (rn-eval repl-env
     (str "goog.require('" (comp/munge (first provides)) "')")))
 
-(defn event-loop [in]
-  (try
-    (let [res (read-response in)]
-      (try
-        (let [{:keys [type value] :as event}
-              (json/read-str res :key-fn keyword)]
-          ;; TODO: add load file
-          (case type
-            "result"
-            (.offer results event)
-            (when-let [stream (if (= type "out") *out* *err*)]
-              (.write stream value 0 (.length ^String value))
-              (.flush stream))))
-        (catch Throwable _
-          (.write *out* res 0 (.length res))
-          (.flush *out*))))
-    (catch IOException e
-      (.printStackTrace e *err*))))
+(defn event-loop [state in]
+  (while (not (:done @state))
+    (try
+      (let [res (read-response in)]
+        (try
+          (let [{:keys [type value] :as event}
+                (json/read-str res :key-fn keyword)]
+            (println "EVENT LOOP:" event)
+            ;; TODO: add load file
+            (case type
+              "result" (.offer results event)
+              (when-let [stream (if (= type "out") *out* *err*)]
+                (.write stream value 0 (.length ^String value))
+                (.flush stream))))
+          (catch Throwable _
+            (.write *out* res 0 (.length res))
+            (.flush *out*))))
+      (catch IOException e
+        (.printStackTrace e *err*)))))
 
 (defn setup
   ([repl-env] (setup repl-env nil))
@@ -95,7 +96,7 @@
          (if @socket
            (recur (read-response (:in @socket)))
            (recur nil))))
-     (.start (Thread. (bound-fn [] (event-loop (:in @socket)))))
+     (.start (Thread. (bound-fn [] (event-loop state (:in @socket)))))
      ;; compile cljs.core & its dependencies, goog/base.js must be available
      ;; for bootstrap to load, use new closure/compile as it can handle
      ;; resources in JARs
@@ -106,31 +107,30 @@
                           (closure/src-file->target-file
                             core (dissoc opts :output-dir))))
            deps       (closure/add-dependencies opts core-js)
-           env        (ana/empty-env)]
+           env        (ana/empty-env)
+           repl-deps  (io/file output-dir "rn_repl_deps.js")]
        ;; output unoptimized code and the deps file
        ;; for all compiled namespaces
        (apply closure/output-unoptimized
          (assoc opts
-           :output-to (.getPath (io/file output-dir "rn_repl_deps.js")))
+           :output-to (.getPath repl-deps))
          deps)
        ;; prevent auto-loading of deps.js
        (rn-eval repl-env
          "global.CLOSURE_NO_DEPS = true;")
-       ;; TODO: need to define CLOSURE_IMPORT_SCRIPT
        ;; NOTE: CLOSURE_LOAD_FILE_SYNC optional, need only for transpile
+       (println ">>>>> load goog/base.js")
        (rn-eval repl-env
          (slurp (io/resource "goog/base.js")))
+       (println ">>>>> load goog/deps.js")
        (rn-eval repl-env
          (slurp (io/resource "goog/deps.js")))
-       ;; TODO: load cljs.core
-       ;(rn-eval repl-env
-       ;  (str "require("
-       ;    (platform-path (conj root-path "rn_repl_deps.js"))
-       ;    ")"))
-       ;; monkey-patch isProvided_ to avoid useless warnings - David
-       ;(rn-eval repl-env
-       ;  (str "goog.isProvided_ = function(x) { return false; };"))
-       ;; load cljs.core, setup printing
+       (rn-eval repl-env (slurp repl-deps))
+       (println ">>>>> loaded basics")
+       ;; monkey-patch isProvided_ to avoid useless goog library warnings
+       (rn-eval repl-env
+         (str "goog.isProvided_ = function(x) { return false; };"))
+       ; load cljs.core, setup printing
        ;(repl/evaluate-form repl-env env "<cljs repl>"
        ;  '(do
        ;     (.require js/goog "cljs.core")
