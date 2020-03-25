@@ -90,7 +90,7 @@ var server = TcpSocket.createServer(function(socket) {
           JSON.stringify({
             type: 'result',
             status: 'exception',
-            value: cljs.repl.error__GT_str(err),
+            value: (typeof cljs != 'undefined') ? cljs.repl.error__GT_str(err) : err.toString()
           }),
         );
       } else if (ret !== undefined && ret !== null) {
