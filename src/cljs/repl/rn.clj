@@ -124,7 +124,8 @@
                             core (dissoc opts :output-dir))))
            deps       (closure/add-dependencies opts core-js)
            env        (ana/empty-env)
-           repl-deps  (io/file output-dir "rn_repl_deps.js")]
+           repl-deps  (io/file output-dir "rn_repl_deps.js")
+           base-path  (.getPath (io/file (:output-dir opts) "goog"))]
        ;; output unoptimized code and the deps file
        ;; for all compiled namespaces
        (apply closure/output-unoptimized
@@ -135,8 +136,7 @@
        (rn-eval repl-env
          "var CLOSURE_NO_DEPS = true;")
        (rn-eval repl-env
-         (str "var CLOSURE_BASE_PATH = \""
-           (.getPath (io/file (:output-dir opts) "goog")) File/separator "\";"))
+         (str "var CLOSURE_BASE_PATH = \"" base-path File/separator "\";"))
        ;; NOTE: CLOSURE_LOAD_FILE_SYNC optional, need only for transpile
        (rn-eval repl-env
          (slurp (io/resource "goog/base.js")))
@@ -157,7 +157,11 @@
        ;  (str "goog.global.CLOSURE_UNCOMPILED_DEFINES = "
        ;    (json/write-str (:closure-defines opts)) ";"))
        (println "SETUP DONE")
-       (wait-for-empty-load-queue)))))
+       (wait-for-empty-load-queue)
+       ;; TODO: remove hack - cljs/core.js is not being loaded by goog.require
+       (rn-eval repl-env
+         (slurp
+           (io/file (.getParent (io/file base-path)) "cljs" "core.js")))))))
 
 (defrecord ReactNativeEnv [host port path socket state]
   repl/IReplEnvOptions
