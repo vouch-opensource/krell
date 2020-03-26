@@ -81,7 +81,7 @@ var server = TcpSocket.createServer(function(socket) {
             var obj = JSON.parse(data);
             ret = evaluate(obj.form);
           } catch (e) {
-            console.error(e, obj.form);
+            console.log(e, obj.form);
             err = e;
           }
         }
