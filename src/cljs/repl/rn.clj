@@ -72,7 +72,6 @@
         (try
           (let [{:keys [type value] :as event}
                 (json/read-str res :key-fn keyword)]
-            (println "EVENT LOOP:" event)
             (case type
               "load-file" (.offer load-queue event)
               "result"    (.offer results-queue event)
@@ -83,7 +82,9 @@
             (.write *out* res 0 (.length res))
             (.flush *out*))))
       (catch IOException e
-        (.printStackTrace e *err*)))))
+        (.printStackTrace e *err*)
+        ;; TODO: switch to ex-info?
+        (repl/tear-down repl-env)))))
 
 (defn load-file-loop [{:keys [state] :as repl-env}]
   (while (not (:done @state))
@@ -91,6 +92,10 @@
       (println "LOAD FILE:" value)
       (rn-eval repl-env (slurp (io/file value)))
       (println "LOADED:" value))))
+
+(defn wait-for-empty-load-queue []
+  (while (pos? (.size load-queue))
+    (Thread/sleep 50)))
 
 (defn setup
   ([repl-env] (setup repl-env nil))
@@ -151,7 +156,8 @@
        ;(rn-eval repl-env
        ;  (str "goog.global.CLOSURE_UNCOMPILED_DEFINES = "
        ;    (json/write-str (:closure-defines opts)) ";"))
-       (println "SETUP DONE")))))
+       (println "SETUP DONE")
+       (wait-for-empty-load-queue)))))
 
 (defrecord ReactNativeEnv [host port path socket state]
   repl/IReplEnvOptions
@@ -170,6 +176,7 @@
     (load-javascript this provides url))
   (-tear-down [this]
     (let [sock @socket]
+      (swap! state assoc :done true)
       (when-not (.isClosed (:socket sock))
         (write (:out sock) ":cljs/quit")
         (close-socket sock)))))
