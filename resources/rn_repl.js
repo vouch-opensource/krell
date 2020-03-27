@@ -40,6 +40,8 @@ var loadFile = function(socket, path) {
   socket.write('\0');
 };
 
+// NOTE: CLOSURE_LOAD_FILE_SYNC not needed as ClojureScript now transpiles
+// offending goog.module files that would need runtime transpiler support
 global.CLOSURE_IMPORT_SCRIPT = function(path, optContents) {
   if (optContents) {
     eval(optContents);

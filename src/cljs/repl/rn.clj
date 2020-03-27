@@ -137,7 +137,6 @@
          "var CLOSURE_NO_DEPS = true;")
        (rn-eval repl-env
          (str "var CLOSURE_BASE_PATH = \"" base-path File/separator "\";"))
-       ;; NOTE: CLOSURE_LOAD_FILE_SYNC optional, need only for transpile
        (rn-eval repl-env
          (slurp (io/resource "goog/base.js")))
        (rn-eval repl-env
