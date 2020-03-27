@@ -143,7 +143,6 @@
        (rn-eval repl-env
          (slurp (io/resource "goog/deps.js")))
        (rn-eval repl-env (slurp repl-deps))
-       ;;(rn-eval repl-env (slurp (io/resource "bootstrap_rn.js")))
        ;; monkey-patch isProvided_ to avoid useless goog library warnings
        (rn-eval repl-env
          (str "goog.isProvided_ = function(x) { return false; };"))
@@ -151,14 +150,17 @@
        (repl/evaluate-form repl-env env "<cljs repl>"
          '(do
             (.require js/goog "cljs.core")))
-       ;; TODO: merge back w/ the above when file loading is sorted out
-       ;(repl/evaluate-form repl-env env "<cljs repl>"
-       ;  '(enable-console-print!))
-       ;(bootstrap/install-repl-goog-require repl-env env)
-       ;(rn-eval repl-env
-       ;  (str "goog.global.CLOSURE_UNCOMPILED_DEFINES = "
-       ;    (json/write-str (:closure-defines opts)) ";"))
-       ))))
+       ;; TODO: we can't merge this with the above, but note this doesn't work
+       ;; in general (even with plain Closure JavaScript), require runs a bunch of
+       ;; async loads and the following JS expression won't have access to any defs.
+       ;; it only works in the Node.js REPL because we have the option for sync
+       ;; loads - this is not possible in React Native
+       (repl/evaluate-form repl-env env "<cljs repl>"
+         '(enable-console-print!))
+       (bootstrap/install-repl-goog-require repl-env env)
+       (rn-eval repl-env
+         (str "goog.global.CLOSURE_UNCOMPILED_DEFINES = "
+           (json/write-str (:closure-defines opts)) ";"))))))
 
 (defrecord ReactNativeEnv [host port path socket state]
   repl/IReplEnvOptions
