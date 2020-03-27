@@ -43,21 +43,32 @@
           (.append sb (char c))
           (recur sb (.read in)))))))
 
+(declare load-queued-files)
+
 (defn rn-eval
   "Evaluate a JavaScript string in the React Native REPL"
   [repl-env js]
   (locking eval-lock
     (let [{:keys [out]} @(:socket repl-env)]
       (write out (json/write-str {:type "eval" :form js}))
-      (let [result (.take results-queue)]
-        (condp = (:status result)
-          "success"
-          {:status :success
-           :value  (:value result)}
+      (let [result (.take results-queue)
+            ret    (condp = (:status result)
+                     "success"
+                     {:status :success
+                      :value  (:value result)}
 
-          "exception"
-          {:status :exception
-           :value  (:value result)})))))
+                     "exception"
+                     {:status :exception
+                      :value  (:value result)})]
+        ;; load any queued files now to simulate sync loads
+        (load-queued-files repl-env)
+        ret))))
+
+(defn load-queued-files [repl-env]
+  (loop [{:keys [value] :as load-file-req} (.poll load-queue)]
+    (when load-file-req
+      (rn-eval repl-env (slurp (io/file value)))
+      (recur (.poll load-queue)))))
 
 (defn load-javascript
   "Load a Closure JavaScript file into the React Native REPL"
@@ -86,17 +97,6 @@
         ;; TODO: switch to ex-info?
         (repl/tear-down repl-env)))))
 
-(defn load-file-loop [{:keys [state] :as repl-env}]
-  (while (not (:done @state))
-    (let [{:keys [value] :as load-file-req} (.take load-queue)]
-      (println "LOAD FILE:" value)
-      (rn-eval repl-env (slurp (io/file value)))
-      (println "LOADED:" value))))
-
-(defn wait-for-empty-load-queue []
-  (while (pos? (.size load-queue))
-    (Thread/sleep 50)))
-
 (defn setup
   ([repl-env] (setup repl-env nil))
   ([{:keys [host port socket state] :as repl-env} opts]
@@ -112,7 +112,6 @@
            (recur (read-response (:in @socket)))
            (recur nil))))
      (.start (Thread. (bound-fn [] (event-loop repl-env (:in @socket)))))
-     (.start (Thread. (bound-fn [] (load-file-loop repl-env))))
      ;; compile cljs.core & its dependencies, goog/base.js must be available
      ;; for bootstrap to load, use new closure/compile as it can handle
      ;; resources in JARs
@@ -132,7 +131,8 @@
          (assoc opts
            :output-to (.getPath repl-deps))
          deps)
-       ;; prevent auto-loading of deps.js
+       ;; prevent auto-loading of deps.js - not really necessary since
+       ;; we write our own and it will override google's dep.js entries
        (rn-eval repl-env
          "var CLOSURE_NO_DEPS = true;")
        (rn-eval repl-env
@@ -143,12 +143,14 @@
        (rn-eval repl-env
          (slurp (io/resource "goog/deps.js")))
        (rn-eval repl-env (slurp repl-deps))
+       ;;(rn-eval repl-env (slurp (io/resource "bootstrap_rn.js")))
        ;; monkey-patch isProvided_ to avoid useless goog library warnings
        (rn-eval repl-env
          (str "goog.isProvided_ = function(x) { return false; };"))
        ; load cljs.core, setup printing
        (repl/evaluate-form repl-env env "<cljs repl>"
-         '(.require js/goog "cljs.core"))
+         '(do
+            (.require js/goog "cljs.core")))
        ;; TODO: merge back w/ the above when file loading is sorted out
        ;(repl/evaluate-form repl-env env "<cljs repl>"
        ;  '(enable-console-print!))
@@ -156,12 +158,7 @@
        ;(rn-eval repl-env
        ;  (str "goog.global.CLOSURE_UNCOMPILED_DEFINES = "
        ;    (json/write-str (:closure-defines opts)) ";"))
-       (println "SETUP DONE")
-       (wait-for-empty-load-queue)
-       ;; TODO: remove hack - cljs/core.js is not being loaded by goog.require
-       (rn-eval repl-env
-         (slurp
-           (io/file (.getParent (io/file base-path)) "cljs" "core.js")))))))
+       ))))
 
 (defrecord ReactNativeEnv [host port path socket state]
   repl/IReplEnvOptions
