@@ -142,9 +142,6 @@
        (rn-eval repl-env
          (slurp (io/resource "goog/deps.js")))
        (rn-eval repl-env (slurp repl-deps))
-       ;; monkey-patch isProvided_ to avoid useless goog library warnings
-       (rn-eval repl-env
-         (str "goog.isProvided_ = function(x) { return false; };"))
        ; load cljs.core, setup printing
        (repl/evaluate-form repl-env env "<cljs repl>"
          '(do
@@ -221,6 +218,7 @@
 
   (mdns/choose-default @ep-map)
 
-  (cljs.repl/repl* (repl-env) {})
+  (cljs.repl/repl* (repl-env)
+    {:target :nodejs :npm-deps true})
 
   )
