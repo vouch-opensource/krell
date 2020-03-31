@@ -1,5 +1,6 @@
 (ns cljs.repl.rn.rt
   (:require [cljs.build.api :as api]
+            [clojure.java.io :as io]
             [clojure.string :as string]
             [clojure.set :as set]))
 
