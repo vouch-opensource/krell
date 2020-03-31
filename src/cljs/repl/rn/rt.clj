@@ -25,6 +25,11 @@
       (into #{} (mapcat #(map str %)) (map :requires cljs-libs))
       (into #{} (keys npm-libs)))))
 
+(defn gen-rt-js [opts]
+  (let [npm-deps (opts)
+        rt-js    (gen-rt-libs npm-deps)]
+    (spit (io/file "rt.js") rt-js)))
+
 (comment
 
   (def opts
