@@ -1,6 +1,6 @@
 import TcpSocket from 'react-native-tcp-socket';
 import Zeroconf from 'react-native-zeroconf';
-import npmDeps from "./rt.js";
+import {npmDeps} from "./rt.js";
 
 // Boostrap for Google Closure Library
 global.goog = {};
