@@ -53,6 +53,10 @@ global.CLOSURE_IMPORT_SCRIPT = function(path, optContents) {
   }
 };
 
+global.require = function(lib) {
+  return npmDeps[lib];
+};
+
 var server = TcpSocket.createServer(function(socket) {
   var buffer = '',
       ret    = null,
