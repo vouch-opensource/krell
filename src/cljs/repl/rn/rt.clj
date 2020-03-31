@@ -15,7 +15,7 @@
     "  }\n"
     "};\n"))
 
-(defn npm-nses
+(defn npm-requires
   [opts]
   (let [cljs-libs (-> (:main opts)
                     api/compilable->ijs
@@ -27,7 +27,7 @@
       (into #{} (keys npm-libs)))))
 
 (defn gen-rt-js [opts]
-  (let [npm-deps (opts)
+  (let [npm-deps (npm-requires opts)
         rt-js    (gen-rt-libs npm-deps)]
     (spit (io/file "rt.js") rt-js)))
 
@@ -39,5 +39,7 @@
      :npm-deps true})
 
   (println (gen-rt-libs (npm-nses opts)))
+
+  (gen-rt-js opts)
 
   )
