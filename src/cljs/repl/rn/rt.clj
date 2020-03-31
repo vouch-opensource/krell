@@ -1,6 +1,18 @@
 (ns cljs.repl.rn.rt
   (:require [cljs.build.api :as api]
+            [clojure.string :as string]
             [clojure.set :as set]))
+
+(defn export-lib [lib]
+  (str "\""lib "\": require('" lib "')" ))
+
+(defn gen-rt-libs [lib-set]
+  (str
+    "module.exports = {\n"
+    "  npmDeps: {\n"
+    (string/join ",\n" (map (comp #(str "    " %) export-lib) lib-set))
+    "  }\n"
+    "};\n"))
 
 (defn npm-nses
   [opts]
@@ -20,6 +32,6 @@
      :target :nodejs
      :npm-deps true})
 
-  (npm-nses opts)
+  (println (gen-rt-libs (npm-nses opts)))
 
   )
