@@ -161,8 +161,10 @@
 (defrecord ReactNativeEnv [host port path socket state]
   repl/IReplEnvOptions
   (-repl-options [this]
-    {:output-dir ".cljs_rn_repl"
-     :target :nodejs})
+    {:nodejs-rt  false
+     :npm-deps   true
+     :output-dir ".krell_repl"
+     :target     :nodejs})
   repl/IParseError
   (-parse-error [_ err _]
     (assoc err :value nil))
@@ -179,14 +181,6 @@
       (when-not (.isClosed (:socket sock))
         (write (:out sock) ":cljs/quit")
         (close-socket sock)))))
-
-(defn compile-opts-opt [cfg copts]
-  (update
-    (cli/compile-opts-opt cfg copts)
-    :options merge
-    {:nodejs-rt false
-     :npm-deps  true
-     :target    :nodejs}))
 
 (defn repl-env* [options]
   (let [ep-map  (atom {})]
@@ -205,13 +199,9 @@
             options)]
       (assoc
         (ReactNativeEnv. host port path (atom nil) (atom nil))
-        ::cli/commands
-        {["-co" "--compile-opts"]
-         {:group ::main&compile :fn compile-opts-opt
-          :arg "edn"
-          :doc (str "Options to configure the build, can be an EDN string or "
-                    "system-dependent path-separated list of EDN files / classpath resources. Options "
-                    "will be merged left to right.")}}))))
+        ;; TODO: override some things to make it more clear what operations
+        ;; are supported / meaningful
+        ::cli/commands {}))))
 
 (defn repl-env
   "Construct a React Native evaluation environment."
@@ -234,7 +224,6 @@
 
   (mdns/choose-default @ep-map)
 
-  (cljs.repl/repl* (repl-env)
-    {:target :nodejs :npm-deps true})
+  (cljs.repl/repl* (repl-env) {})
 
   )
