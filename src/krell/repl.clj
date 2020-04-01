@@ -199,9 +199,13 @@
             options)]
       (assoc
         (ReactNativeEnv. host port path (atom nil) (atom nil))
-        ;; TODO: override some things to make it more clear what operations
-        ;; are supported / meaningful
-        ::cli/commands {}))))
+        ::cli/commands
+        {:groups
+         {::cli/main&compile
+          {:desc "init options"
+           :pseudos {["-re" "--repl-env"]
+                     {:arg "env"
+                      :doc (str "Defaults to the only supported value - krell.repl")}}}}}))))
 
 (defn repl-env
   "Construct a React Native evaluation environment."
