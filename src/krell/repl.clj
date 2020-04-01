@@ -161,10 +161,16 @@
 (defrecord ReactNativeEnv [host port path socket state]
   repl/IReplEnvOptions
   (-repl-options [this]
-    {:nodejs-rt  false
-     :npm-deps   true
-     :output-dir ".krell_repl"
-     :target     :nodejs})
+    {:nodejs-rt     false
+     :npm-deps      true
+     :output-dir    ".krell_repl"
+     :target        :nodejs
+     ::cli/commands {:groups
+                     {::cli/main&compile
+                      {:desc "init options"
+                       :pseudos {["-re" "--repl-env"]
+                                 {:arg "env"
+                                  :doc (str "Defaults to the only supported value - krell.repl")}}}}}})
   repl/IParseError
   (-parse-error [_ err _]
     (assoc err :value nil))
@@ -197,15 +203,7 @@
              :port 5002}
             default
             options)]
-      (assoc
-        (ReactNativeEnv. host port path (atom nil) (atom nil))
-        ::cli/commands
-        {:groups
-         {::cli/main&compile
-          {:desc "init options"
-           :pseudos {["-re" "--repl-env"]
-                     {:arg "env"
-                      :doc (str "Defaults to the only supported value - krell.repl")}}}}}))))
+      (ReactNativeEnv. host port path (atom nil) (atom nil)))))
 
 (defn repl-env
   "Construct a React Native evaluation environment."
