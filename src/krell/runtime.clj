@@ -1,4 +1,4 @@
-(ns cljs.repl.rn.rt
+(ns krell.runtime
   (:require [cljs.build.api :as api]
             [clojure.java.io :as io]
             [clojure.string :as string]

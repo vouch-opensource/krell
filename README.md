@@ -1,3 +1,4 @@
-# rn-repl
+# krell
 
-A ClojureScript REPL for React Native.
+Standalone ClojureScript tooling for React Native. Includes simple build
+and REPL extensions to ClojureScript.

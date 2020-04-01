@@ -1,4 +1,4 @@
-(ns cljs.repl.rn.mdns
+(ns krell.mdns
   (:require [clojure.string :as string])
   (:import [java.net Inet4Address InetAddress NetworkInterface Socket URI]
            [javax.jmdns JmDNS ServiceListener]))

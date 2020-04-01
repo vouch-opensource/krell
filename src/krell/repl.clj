@@ -1,4 +1,4 @@
-(ns cljs.repl.rn
+(ns krell.repl
   (:require [cljs.analyzer :as ana]
             [cljs.cli :as cli]
             [cljs.closure :as closure]
@@ -180,6 +180,9 @@
         (write (:out sock) ":cljs/quit")
         (close-socket sock)))))
 
+(defn compile-opts-opt [cfg copts]
+  ())
+
 (defn repl-env* [options]
   (let [ep-map  (atom {})]
     (mdns/setup
@@ -195,7 +198,15 @@
              :port 5002}
             default
             options)]
-     (ReactNativeEnv. host port path (atom nil) (atom nil)))))
+      (assoc
+        (ReactNativeEnv. host port path (atom nil) (atom nil))
+        ::cli/commands
+        {["-co" "--compile-opts"]
+         {:group ::main&compile :fn compile-opts-opt
+          :arg "edn"
+          :doc (str "Options to configure the build, can be an EDN string or "
+                    "system-dependent path-separated list of EDN files / classpath resources. Options "
+                    "will be merged left to right.")}}))))
 
 (defn repl-env
   "Construct a React Native evaluation environment."
