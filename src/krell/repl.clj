@@ -5,10 +5,10 @@
             [cljs.compiler :as comp]
             [cljs.repl :as repl]
             [cljs.repl.bootstrap :as bootstrap]
-            [cljs.repl.rn.mdns :as mdns]
             [cljs.util :as util]
             [clojure.data.json :as json]
-            [clojure.java.io :as io])
+            [clojure.java.io :as io]
+            [krell.mdns :as mdns])
   (:import [java.io File BufferedReader BufferedWriter IOException]
            [java.net Socket]
            [java.util.concurrent LinkedBlockingQueue]))
@@ -181,7 +181,12 @@
         (close-socket sock)))))
 
 (defn compile-opts-opt [cfg copts]
-  ())
+  (update
+    (cli/compile-opts-opt cfg copts)
+    :options merge
+    {:nodejs-rt false
+     :npm-deps  true
+     :target    :nodejs}))
 
 (defn repl-env* [options]
   (let [ep-map  (atom {})]
