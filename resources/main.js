@@ -27,6 +27,14 @@ function exists(obj, xs) {
     }
 }
 
+function getIn(obj, xs) {
+    if(xs.length === 0) {
+        return obj;
+    } else {
+        return getIn(obj[xs[0]], xs.slice(0));
+    }
+}
+
 function krellUpdateRoot(cb) {
     waitForCore(function() {
         // then load the main ns
