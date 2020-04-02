@@ -4,7 +4,7 @@
 
 import {AppRegistry} from 'react-native';
 import {name as appName} from './app.json';
-import '$KRELL_OUTPUT_DIR/repl.js';
+import '$KRELL_OUTPUT_DIR/krell_repl.js';
 import '$KRELL_OUTPUT_TO';
 
 var App = function () {
