@@ -28,13 +28,13 @@
 
 (defn write-rt-js [opts]
   (let [npm-deps (npm-requires opts)
-        rt-js    (gen-rt-libs npm-deps)]
-    (spit (io/file "rt.js") rt-js)))
+        source   (rt-js npm-deps)]
+    (spit (io/file "rt.js") source)))
 
 (defn write-index-js [opts]
-  (let [js (slurp (io/resource "index.j"))]
+  (let [source (slurp (io/resource "index.js"))]
     (spit (io/file "index.js")
-      (-> js
+      (-> source
         (string/replace "$KRELL_OUTPUT_TO" (:output-to opts))
         (string/replace "$KRELL_OUTPUT_DIR" (:output-dir opts))))))
 
