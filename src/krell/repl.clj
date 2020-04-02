@@ -162,7 +162,7 @@
 (defn krell-compile
   [repl-env {:keys [options] :as cfg}]
   (gen/write-rt-js options)
-  ;; TODO: generate index.js
+  (gen/write-index-js options)
   ;; TODO: handle :optimizations higher than :none
   (cli/default-compile repl-env cfg))
 
