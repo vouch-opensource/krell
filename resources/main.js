@@ -3,7 +3,7 @@ import '$KRELL_OUTPUT_DIR/krell_repl.js';
 var main = '$KRELL_MAIN_NS';
 
 function waitForCore(cb) {
-    if(typeof cljs !== 'undefine') {
+    if(typeof cljs !== 'undefined') {
         cb();
     } else {
         setTimeout(function() { waitForCore(cb); }, 250);
