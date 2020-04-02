@@ -4,9 +4,14 @@
 
 import {AppRegistry} from 'react-native';
 import {name as appName} from './app.json';
-import {krellSetBootstrapEl} from '$KRELL_OUTPUT_TO';
+import {krellUpdateRoot} from '$KRELL_OUTPUT_TO';
 
-var App = function () {
+/*
+ * Establish a root that works for REPL based dev / prod. In the REPL case
+ * the real app root will be loaded async. In prod it won't really be async
+ * but we want to treat both cases the same.
+ */
+var KrellRoot = function () {
     return createReactClass({
         getInitialState: function () {
             return {loaded: false}
@@ -23,9 +28,12 @@ var App = function () {
             return this.state.root;
         },
         componentDidMount: function () {
-            var app = this;
+            var krell = this;
+            krellUpdateRoot(function(appRoot) {
+                krell.setState({root: appRoot, loaded: true});
+            });
         }
     });
 };
 
-AppRegistry.registerComponent(appName, () => App);
+AppRegistry.registerComponent(appName, () => KrellRoot);
