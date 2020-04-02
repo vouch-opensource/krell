@@ -57,9 +57,14 @@ global.require = function(lib) {
   return npmDeps[lib];
 };
 
+var notifyListeners = function(request) {
+  console.log("Notify listeners", request);
+};
+
 var server = TcpSocket.createServer(function(socket) {
   var buffer = '',
       ret    = null,
+      req    = null,
       err    = null;
 
   // it doesn't matter which socket we use for loads
@@ -86,6 +91,7 @@ var server = TcpSocket.createServer(function(socket) {
         } else {
           try {
             var obj = JSON.parse(data);
+            req = obj.request;
             ret = evaluate(obj.form);
           } catch (e) {
             console.log(e, obj.form);
@@ -102,24 +108,31 @@ var server = TcpSocket.createServer(function(socket) {
             value: (typeof cljs != 'undefined') ? cljs.repl.error__GT_str(err) : err.toString()
           }),
         );
-      } else if (ret !== undefined && ret !== null) {
-        socket.write(
-          JSON.stringify({
-            type: 'result',
-            status: 'success',
-            value: ret.toString(),
-          }),
-        );
       } else {
-        socket.write(
-          JSON.stringify({
-            type: 'result',
-            status: 'success',
-            value: null,
-          }),
-        );
+        if (ret !== undefined && ret !== null) {
+          socket.write(
+              JSON.stringify({
+                type: 'result',
+                status: 'success',
+                value: ret.toString(),
+              }),
+          );
+        } else {
+          socket.write(
+              JSON.stringify({
+                type: 'result',
+                status: 'success',
+                value: null,
+              }),
+          );
+        }
+
+        if (req) {
+          notifyListeners(req);
+        }
       }
 
+      req = null;
       ret = null;
       err = null;
 
