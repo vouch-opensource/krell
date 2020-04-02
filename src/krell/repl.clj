@@ -8,6 +8,7 @@
             [cljs.util :as util]
             [clojure.data.json :as json]
             [clojure.java.io :as io]
+            [krell.gen :as gen]
             [krell.mdns :as mdns])
   (:import [java.io File BufferedReader BufferedWriter IOException]
            [java.net Socket]
@@ -160,7 +161,7 @@
 
 (defn krell-compile
   [repl-env {:keys [options] :as cfg}]
-  ;; TODO: generate rt.js
+  (gen/write-rt-js options)
   ;; TODO: generate index.js
   ;; TODO: handle :optimizations higher than :none
   (cli/default-compile repl-env cfg))
