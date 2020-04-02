@@ -158,6 +158,10 @@
          (str "goog.global.CLOSURE_UNCOMPILED_DEFINES = "
            (json/write-str (:closure-defines opts)) ";"))))))
 
+(defn krell-compile
+  [repl-env {:keys [options] :as cfg}]
+  (cli/default-compile repl-env cfg))
+
 (defrecord ReactNativeEnv [host port path socket state]
   repl/IReplEnvOptions
   (-repl-options [this]
@@ -170,7 +174,8 @@
                       {:desc "init options"
                        :pseudos {["-re" "--repl-env"]
                                  {:arg "env"
-                                  :doc (str "Defaults to the only supported value - krell.repl")}}}}}})
+                                  :doc (str "Defaults to the only supported value - krell.repl")}}}}}
+     ::cli/compile  krell-compile})
   repl/IParseError
   (-parse-error [_ err _]
     (assoc err :value nil))
