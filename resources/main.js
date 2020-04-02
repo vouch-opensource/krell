@@ -1,10 +1,29 @@
 import '$KRELL_OUTPUT_DIR/krell_repl.js';
 
+var main = '$KRELL_MAIN_NS';
+
 function waitForCore(cb) {
     if(typeof cljs !== 'undefine') {
         cb();
     } else {
         setTimeout(function() { waitForCore(cb); }, 250);
+    }
+}
+
+function exists(obj, xs) {
+    if(xs.length >= 1) {
+        var key = xs[0],
+            hasKey = obj.hasOwnProperty(key);
+        if (xs.length === 1) {
+            return hasKey;
+        } else {
+            if(hasKey) {
+                return exists(obj[key], xs.slice(1));
+            }
+        }
+        return false;
+    } else {
+        return false;
     }
 }
 
