@@ -160,6 +160,9 @@
 
 (defn krell-compile
   [repl-env {:keys [options] :as cfg}]
+  ;; TODO: generate rt.js
+  ;; TODO: generate index.js
+  ;; TODO: handle :optimizations higher than :none
   (cli/default-compile repl-env cfg))
 
 (defrecord ReactNativeEnv [host port path socket state]
@@ -169,6 +172,7 @@
      :npm-deps      true
      :output-dir    ".krell_repl"
      :target        :nodejs
+     ;; TODO: add :target-fn
      ::cli/commands {:groups
                      {::cli/main&compile
                       {:desc "init options"
