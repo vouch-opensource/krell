@@ -26,7 +26,7 @@ var App = function () {
         componentDidMount: function () {
             var app = this;
         }
-    })
+    });
 };
 
 AppRegistry.registerComponent(appName, () => App);
