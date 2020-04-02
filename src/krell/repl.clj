@@ -48,27 +48,34 @@
 
 (defn rn-eval
   "Evaluate a JavaScript string in the React Native REPL"
-  [repl-env js]
-  (locking eval-lock
-    (let [{:keys [out]} @(:socket repl-env)]
-      (write out (json/write-str {:type "eval" :form js}))
-      (let [result (.take results-queue)
-            ret    (condp = (:status result)
-                     "success"
-                     {:status :success
-                      :value  (:value result)}
+  ([repl-env js]
+   (rn-eval repl-env js nil))
+  ([repl-env js req]
+   (locking eval-lock
+     (let [{:keys [out]} @(:socket repl-env)]
+       (write out (json/write-str
+                    (merge {:type "eval" :form js}
+                      ;; if there was client driven request then pass on this
+                      ;; information back to the client
+                      (when req {:request req}))))
+       (let [result (.take results-queue)
+             ret (condp = (:status result)
+                   "success"
+                   {:status :success
+                    :value  (:value result)}
 
-                     "exception"
-                     {:status :exception
-                      :value  (:value result)})]
-        ;; load any queued files now to simulate sync loads
-        (load-queued-files repl-env)
-        ret))))
+                   "exception"
+                   {:status :exception
+                    :value  (:value result)})]
+         ;; load any queued files now to simulate sync loads
+         (load-queued-files repl-env)
+         ret)))))
 
 (defn load-queued-files [repl-env]
   (loop [{:keys [value] :as load-file-req} (.poll load-queue)]
     (when load-file-req
-      (rn-eval repl-env (slurp (io/file value)))
+      (rn-eval repl-env
+        (slurp (io/file value)) load-file-req)
       (recur (.poll load-queue)))))
 
 (defn load-javascript
