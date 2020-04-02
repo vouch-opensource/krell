@@ -1,0 +1,45 @@
+(ns krell.gen
+  (:require [cljs.build.api :as api]
+            [clojure.java.io :as io]
+            [clojure.string :as string]
+            [clojure.set :as set]))
+
+(defn export-lib [lib]
+  (str "\""lib "\": require('" lib "')" ))
+
+(defn rt-js [lib-set]
+  (str
+    "module.exports = {\n"
+    "  npmDeps: {\n"
+    (string/join ",\n" (map (comp #(str "    " %) export-lib) lib-set))
+    "  }\n"
+    "};\n"))
+
+(defn npm-requires
+  [opts]
+  (let [cljs-libs (-> (:main opts)
+                    api/compilable->ijs
+                    api/add-dependency-sources)
+        npm-libs  (api/index-ijs (api/node-modules opts))]
+    (set/intersection
+      ;; node lib names will be strings
+      (into #{} (mapcat #(map str %)) (map :requires cljs-libs))
+      (into #{} (keys npm-libs)))))
+
+(defn write-rt-js [opts]
+  (let [npm-deps (npm-requires opts)
+        rt-js    (gen-rt-libs npm-deps)]
+    (spit (io/file "rt.js") rt-js)))
+
+(comment
+
+  (def opts
+    {:main 'hello-world.core
+     :target :nodejs
+     :npm-deps true})
+
+  (println (gen-rt-libs (npm-nses opts)))
+
+  (gen-rt-js opts)
+
+  )
