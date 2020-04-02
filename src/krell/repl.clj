@@ -178,7 +178,21 @@
                       {:desc "init options"
                        :pseudos {["-re" "--repl-env"]
                                  {:arg "env"
-                                  :doc (str "Defaults to the only supported value - krell.repl")}}}}}
+                                  :doc (str "Defaults to the only supported value - krell.repl")}}}}
+                     :init
+                     {["-t" "--target"]
+                      {:group ::cli/main&compile
+                       :fn (fn [cfg target]
+                             (assert (#{"node" "nodejs"} target) "Invalid --target, only nodejs supported")
+                             cfg)
+                       :arg "name"
+                       :doc (str "The JavaScript target. Supported values: node or nodejs.")}}
+                     :main
+                     {["-s" "--serve"]
+                      {:fn (fn [cfg opt]
+                             (throw "--serve not supported"))
+                       :arg "N/A"
+                       :doc (str "NOT SUPPORTED")}}}
      ::cli/compile  krell-compile})
   repl/IParseError
   (-parse-error [_ err _]
