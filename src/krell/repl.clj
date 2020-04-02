@@ -107,8 +107,15 @@
 
 (defn base-loaded? [repl-env]
   (= "true"
-     (rn-eval repl-env
-       "(function(){return (typeof goog !== 'undefined');})()")))
+     (:value
+       (rn-eval repl-env
+         "(function(){return (typeof goog !== 'undefined');})()"))))
+
+(defn core-loaded? [repl-env]
+  (= "true"
+     (:value
+       (rn-eval repl-env
+         "(function(){return (typeof cljs !== 'undefined');})()"))))
 
 (defn setup
   ([repl-env] (setup repl-env nil))
@@ -155,22 +162,22 @@
        ;; krell_repl.js declares goog as an object
        (when-not (base-loaded? repl-env)
          (rn-eval repl-env
-           (slurp (io/resource "goog/base.js"))))
-       (rn-eval repl-env
-         (slurp (io/resource "goog/deps.js")))
+           (slurp (io/resource "goog/base.js")))
+         (rn-eval repl-env
+           (slurp (io/resource "goog/deps.js"))))
        (rn-eval repl-env (slurp repl-deps))
-       ; load cljs.core, setup printing
-       (repl/evaluate-form repl-env env "<cljs repl>"
-         '(do
-            (.require js/goog "cljs.core")))
-       ;; TODO: we can't merge this with the above, but note this doesn't work
-       ;; in general (even with plain Closure JavaScript), require runs a bunch of
-       ;; async loads and the following JS expression won't have access to any defs.
-       ;; it only works in the Node.js REPL because we have the option for sync
-       ;; loads - this is not possible in React Native
-       (repl/evaluate-form repl-env env "<cljs repl>"
-         '(enable-console-print!))
-       (bootstrap/install-repl-goog-require repl-env env)
+       (when-not (core-loaded? repl-env)
+         (repl/evaluate-form repl-env env "<cljs repl>"
+           '(do
+              (.require js/goog "cljs.core")))
+         ;; TODO: we can't merge this with the above, but note this doesn't work
+         ;; in general (even with plain Closure JavaScript), require runs a bunch of
+         ;; async loads and the following JS expression won't have access to any defs.
+         ;; it only works in the Node.js REPL because we have the option for sync
+         ;; loads - this is not possible in React Native
+         (repl/evaluate-form repl-env env "<cljs repl>"
+           '(enable-console-print!))
+         (bootstrap/install-repl-goog-require repl-env env))
        (rn-eval repl-env
          (str "goog.global.CLOSURE_UNCOMPILED_DEFINES = "
            (json/write-str (:closure-defines opts)) ";"))))))
