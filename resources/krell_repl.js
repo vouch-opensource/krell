@@ -10,15 +10,15 @@ var evaluate = eval;
 const zeroconf = new Zeroconf();
 
 zeroconf.on('start', () => {
-  console.log('Scan started');
+    console.log('Scan started');
 });
 
 zeroconf.on('stop', () => {
-  console.log('Scan stopped');
+    console.log('Scan stopped');
 });
 
 zeroconf.on('resolved', service => {
-  console.log('Service resolved:', JSON.stringify(service));
+    console.log('Service resolved:', JSON.stringify(service));
 });
 
 zeroconf.scan('http', 'tcp', 'local.');
@@ -31,32 +31,32 @@ zeroconf.publishService('http', 'tcp', 'local.', 'rn.repl', 5002);
 var loadFileSocket = null;
 
 var loadFile = function(socket, path) {
-  var req = {
-    type: "load-file",
-    value: path
-  };
-  socket.write(JSON.stringify(req));
-  socket.write('\0');
+    var req = {
+        type: "load-file",
+        value: path
+    };
+    socket.write(JSON.stringify(req));
+    socket.write('\0');
 };
 
 // NOTE: CLOSURE_LOAD_FILE_SYNC not needed as ClojureScript now transpiles
 // offending goog.module files that would need runtime transpiler support
 global.CLOSURE_IMPORT_SCRIPT = function(path, optContents) {
-  if (optContents) {
-    eval(optContents);
-    return true;
-  } else {
-    loadFile(loadFileSocket, path, optContents);
-    return true;
-  }
+    if (optContents) {
+        eval(optContents);
+        return true;
+    } else {
+        loadFile(loadFileSocket, path, optContents);
+        return true;
+    }
 };
 
 global.require = function(lib) {
-  return npmDeps[lib];
+    return npmDeps[lib];
 };
 
 var notifyListeners = function(request) {
-  console.log("Notify listeners", request);
+    console.log("Notify listeners", request);
 };
 
 var server = TcpSocket.createServer(function(socket) {
