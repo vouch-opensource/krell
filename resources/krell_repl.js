@@ -59,98 +59,98 @@ var notifyListeners = function(request) {
     console.log("Notify listeners", request);
 };
 
-var server = TcpSocket.createServer(function(socket) {
-  var buffer = '',
-      ret    = null,
-      req    = null,
-      err    = null;
+var server = TcpSocket.createServer(function (socket) {
+    var buffer = '',
+        ret = null,
+        req = null,
+        err = null;
 
-  // it doesn't matter which socket we use for loads
-  loadFileSocket = socket;
+    // it doesn't matter which socket we use for loads
+    loadFileSocket = socket;
 
-  socket.write('ready');
-  socket.write('\0');
+    socket.write('ready');
+    socket.write('\0');
 
-  // TODO: I/O forwarding
+    // TODO: I/O forwarding
 
-  socket.on('data', data => {
-    if (data[data.length - 1] !== 0) {
-      buffer += data;
-    } else {
-      data = buffer + data;
-      buffer = '';
-
-      if (data) {
-        data = data.replace(/\0/g, '');
-
-        if (data === ':cljs/quit') {
-          server.close();
-          return;
+    socket.on('data', data => {
+        if (data[data.length - 1] !== 0) {
+            buffer += data;
         } else {
-          try {
-            var obj = JSON.parse(data);
-            req = obj.request;
-            ret = evaluate(obj.form);
-          } catch (e) {
-            console.log(e, obj.form);
-            err = e;
-          }
+            data = buffer + data;
+            buffer = '';
+
+            if (data) {
+                data = data.replace(/\0/g, '');
+
+                if (data === ':cljs/quit') {
+                    server.close();
+                    return;
+                } else {
+                    try {
+                        var obj = JSON.parse(data);
+                        req = obj.request;
+                        ret = evaluate(obj.form);
+                    } catch (e) {
+                        console.log(e, obj.form);
+                        err = e;
+                    }
+                }
+            }
+
+            if (err) {
+                socket.write(
+                    JSON.stringify({
+                        type: 'result',
+                        status: 'exception',
+                        value: (typeof cljs != 'undefined') ? cljs.repl.error__GT_str(err) : err.toString()
+                    }),
+                );
+            } else {
+                if (ret !== undefined && ret !== null) {
+                    socket.write(
+                        JSON.stringify({
+                            type: 'result',
+                            status: 'success',
+                            value: ret.toString(),
+                        }),
+                    );
+                } else {
+                    socket.write(
+                        JSON.stringify({
+                            type: 'result',
+                            status: 'success',
+                            value: null,
+                        }),
+                    );
+                }
+
+                if (req) {
+                    notifyListeners(req);
+                }
+            }
+
+            req = null;
+            ret = null;
+            err = null;
+
+            socket.write('\0');
         }
-      }
+    });
 
-      if (err) {
-        socket.write(
-          JSON.stringify({
-            type: 'result',
-            status: 'exception',
-            value: (typeof cljs != 'undefined') ? cljs.repl.error__GT_str(err) : err.toString()
-          }),
-        );
-      } else {
-        if (ret !== undefined && ret !== null) {
-          socket.write(
-              JSON.stringify({
-                type: 'result',
-                status: 'success',
-                value: ret.toString(),
-              }),
-          );
-        } else {
-          socket.write(
-              JSON.stringify({
-                type: 'result',
-                status: 'success',
-                value: null,
-              }),
-          );
-        }
+    socket.on('error', error => {
+        console.log('An error ocurred with client socket ', error);
+    });
 
-        if (req) {
-          notifyListeners(req);
-        }
-      }
-
-      req = null;
-      ret = null;
-      err = null;
-
-      socket.write('\0');
-    }
-  });
-
-  socket.on('error', error => {
-    console.log('An error ocurred with client socket ', error);
-  });
-
-  socket.on('close', error => {
-    console.log('Closed connection with ', socket.address());
-  });
+    socket.on('close', error => {
+        console.log('Closed connection with ', socket.address());
+    });
 }).listen({port: 5002, host: '0.0.0.0'});
 
 server.on('error', error => {
-  console.log('An error ocurred with the server', error);
+    console.log('An error ocurred with the server', error);
 });
 
 server.on('close', () => {
-  console.log('Server closed connection');
+    console.log('Server closed connection');
 });
