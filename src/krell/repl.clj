@@ -105,6 +105,11 @@
         ;; TODO: switch to ex-info?
         (repl/tear-down repl-env)))))
 
+(defn base-loaded? [repl-env]
+  (= "true"
+     (rn-eval repl-env
+       "(function(){return (typeof goog !== 'undefined');})()")))
+
 (defn setup
   ([repl-env] (setup repl-env nil))
   ([{:keys [host port socket state] :as repl-env} opts]
@@ -145,8 +150,12 @@
          "var CLOSURE_NO_DEPS = true;")
        (rn-eval repl-env
          (str "var CLOSURE_BASE_PATH = \"" base-path File/separator "\";"))
-       (rn-eval repl-env
-         (slurp (io/resource "goog/base.js")))
+       ;; Only ever load goog base *once*, all the dep
+       ;; graph stuff is there an it needs to be preserved
+       ;; krell_repl.js declares goog as an object
+       (when-not (base-loaded? repl-env)
+         (rn-eval repl-env
+           (slurp (io/resource "goog/base.js"))))
        (rn-eval repl-env
          (slurp (io/resource "goog/deps.js")))
        (rn-eval repl-env (slurp repl-deps))
