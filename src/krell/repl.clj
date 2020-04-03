@@ -168,8 +168,7 @@
            (slurp (io/resource "goog/deps.js"))))
        (rn-eval repl-env (slurp repl-deps))
        (when (.exists cljs-deps)
-         (rn-eval repl-env
-           (slurp (io/resource "goog/deps.js"))))
+         (rn-eval repl-env (slurp cljs-deps)))
        (when-not (core-loaded? repl-env)
          (repl/evaluate-form repl-env env "<cljs repl>"
            '(do
