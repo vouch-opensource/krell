@@ -29,7 +29,7 @@
 (defn write-rt-js [opts]
   (let [npm-deps (npm-requires opts)
         source   (rt-js npm-deps)]
-    (spit (io/file "rt.js") source)))
+    (spit (io/file (:output-dir opts) "rt.js") source)))
 
 (defn write-index-js [opts]
   (let [source (slurp (io/resource "index.js"))]
