@@ -36,7 +36,7 @@ If you intend to use the REPL you must install the following into your React
 Native project:
 
 * [react-native-tcp-socket](https://github.com/Rapsssito/react-native-tcp-socket)
-* [react-native-zero-conf](https://github.com/balthazar/react-native-zeroconf)
+* [react-native-zeroconf](https://github.com/balthazar/react-native-zeroconf)
 
 ## REPL
 
