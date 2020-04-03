@@ -187,8 +187,13 @@
   (gen/write-rt-js options)
   (gen/write-index-js options)
   (gen/write-repl-js options)
-  ;; TODO: handle :optimizations higher than :none
-  (cli/default-compile repl-env cfg))
+  (cli/default-compile repl-env
+    (cond-> cfg
+      (not= :none (:optimizations options))
+      (update :options
+        {:output-wrapper
+         (fn [js]
+           (str js (gen/krell-main-js options)))}))))
 
 (defrecord ReactNativeEnv [host port path socket state]
   repl/IReplEnvOptions
