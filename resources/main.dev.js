@@ -54,11 +54,11 @@ function krellUpdateRoot(cb) {
         if(!exists(global, xs)) {
             var path = goog.debugLoader_.getPathFromDeps_(main);
             onSourceLoad(path, function() {
-                cb(getMainFn(main));
+                cb(getMainFn(main)());
             });
             goog.require(main);
         } else {
-            cb(getMainFn(main));
+            cb(getMainFn(main)());
         }
     });
 }
