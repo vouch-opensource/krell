@@ -4,7 +4,7 @@
 
 import {AppRegistry} from 'react-native';
 import {name as appName} from './app.json';
-import {krellUpdateRoot} from '$KRELL_OUTPUT_TO';
+import {krellUpdateRoot} from './$KRELL_OUTPUT_TO';
 
 /*
  * Establish a root that works for REPL based dev / prod. In the REPL case
