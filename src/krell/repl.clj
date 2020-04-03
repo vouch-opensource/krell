@@ -186,6 +186,7 @@
   [repl-env {:keys [options] :as cfg}]
   (gen/write-rt-js options)
   (gen/write-index-js options)
+  (gen/write-repl-js options)
   ;; TODO: handle :optimizations higher than :none
   (cli/default-compile repl-env cfg))
 
