@@ -143,7 +143,7 @@
                             core (dissoc opts :output-dir))))
            deps       (closure/add-dependencies opts core-js)
            env        (ana/empty-env)
-           repl-deps  (io/file output-dir "rn_repl_deps.js")
+           repl-deps  (io/file output-dir "krell_repl_deps.js")
            cljs-deps  (io/file output-dir "cljs_deps.js")
            base-path  (.getPath (io/file (:output-dir opts) "goog"))]
        ;; output unoptimized code and the deps file
