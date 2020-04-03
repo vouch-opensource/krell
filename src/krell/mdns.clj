@@ -1,6 +1,6 @@
 (ns krell.mdns
   (:require [clojure.string :as string])
-  (:import [java.net Inet4Address InetAddress NetworkInterface Socket URI]
+  (:import [java.net InetAddress NetworkInterface]
            [javax.jmdns JmDNS ServiceListener]))
 
 (def krell-prefix "krell.repl")
