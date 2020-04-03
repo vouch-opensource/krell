@@ -1,5 +1,6 @@
 (ns krell.gen
   (:require [cljs.build.api :as api]
+            [cljs.util :as util]
             [clojure.java.io :as io]
             [clojure.set :as set]
             [clojure.string :as string]))
@@ -28,8 +29,10 @@
 
 (defn write-rt-js [opts]
   (let [npm-deps (npm-requires opts)
-        source   (rt-js npm-deps)]
-    (spit (io/file (:output-dir opts) "rt.js") source)))
+        source   (rt-js npm-deps)
+        out-file (io/file (:output-dir opts) "rt.js")]
+    (util/mkdirs out-file)
+    (spit out-file source)))
 
 (defn write-index-js [opts]
   (let [source (slurp (io/resource "index.js"))]
