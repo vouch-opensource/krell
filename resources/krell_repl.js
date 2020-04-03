@@ -1,5 +1,5 @@
-import TcpSocket from 'react-native-tcp-socket';
-import Zeroconf from 'react-native-zeroconf';
+import TcpSocket from "react-native-tcp-socket";
+import Zeroconf from "react-native-zeroconf";
 import {npmDeps} from "./rt.js";
 
 var evaluate = eval;
@@ -9,21 +9,21 @@ var evaluate = eval;
 
 const zeroconf = new Zeroconf();
 
-zeroconf.on('start', () => {
-    console.log('Scan started');
+zeroconf.on("start", () => {
+    console.log("Scan started");
 });
 
-zeroconf.on('stop', () => {
-    console.log('Scan stopped');
+zeroconf.on("stop", () => {
+    console.log("Scan stopped");
 });
 
-zeroconf.on('resolved', service => {
-    console.log('Service resolved:', JSON.stringify(service));
+zeroconf.on("resolved", service => {
+    console.log("Service resolved:", JSON.stringify(service));
 });
 
-zeroconf.scan('http', 'tcp', 'local.');
+zeroconf.scan("http", "tcp", "local.");
 
-zeroconf.publishService('http', 'tcp', 'local.', 'rn.repl', 5002);
+zeroconf.publishService("http", "tcp", "local.", "rn.repl", 5002);
 
 // =============================================================================
 // REPL Server
@@ -59,6 +59,12 @@ var notifyListeners = function(request) {
     console.log("Notify listeners", request);
 };
 
+var onLibLoad = function(ns) {
+    if(typeof goog !== "undefined") {
+
+    }
+};
+
 var server = TcpSocket.createServer(function (socket) {
     var buffer = '',
         ret = null,
@@ -68,22 +74,22 @@ var server = TcpSocket.createServer(function (socket) {
     // it doesn't matter which socket we use for loads
     loadFileSocket = socket;
 
-    socket.write('ready');
-    socket.write('\0');
+    socket.write("ready");
+    socket.write("\0");
 
     // TODO: I/O forwarding
 
-    socket.on('data', data => {
+    socket.on("data", data => {
         if (data[data.length - 1] !== 0) {
             buffer += data;
         } else {
             data = buffer + data;
-            buffer = '';
+            buffer = "";
 
             if (data) {
-                data = data.replace(/\0/g, '');
+                data = data.replace(/\0/g, "");
 
-                if (data === ':cljs/quit') {
+                if (data === ":cljs/quit") {
                     server.close();
                     return;
                 } else {
@@ -101,25 +107,25 @@ var server = TcpSocket.createServer(function (socket) {
             if (err) {
                 socket.write(
                     JSON.stringify({
-                        type: 'result',
-                        status: 'exception',
-                        value: (typeof cljs != 'undefined') ? cljs.repl.error__GT_str(err) : err.toString()
+                        type: "result",
+                        status: "exception",
+                        value: (typeof cljs != "undefined") ? cljs.repl.error__GT_str(err) : err.toString()
                     }),
                 );
             } else {
                 if (ret !== undefined && ret !== null) {
                     socket.write(
                         JSON.stringify({
-                            type: 'result',
-                            status: 'success',
+                            type: "result",
+                            status: "success",
                             value: ret.toString(),
                         }),
                     );
                 } else {
                     socket.write(
                         JSON.stringify({
-                            type: 'result',
-                            status: 'success',
+                            type: "result",
+                            status: "success",
                             value: null,
                         }),
                     );
@@ -134,23 +140,23 @@ var server = TcpSocket.createServer(function (socket) {
             ret = null;
             err = null;
 
-            socket.write('\0');
+            socket.write("\0");
         }
     });
 
-    socket.on('error', error => {
-        console.log('An error ocurred with client socket ', error);
+    socket.on("error", error => {
+        console.log("An error ocurred with client socket ", error);
     });
 
-    socket.on('close', error => {
-        console.log('Closed connection with ', socket.address());
+    socket.on("close", error => {
+        console.log("Closed connection with ", socket.address());
     });
-}).listen({port: 5002, host: '0.0.0.0'});
+}).listen({port: 5002, host: "0.0.0.0"});
 
-server.on('error', error => {
-    console.log('An error ocurred with the server', error);
+server.on("error", error => {
+    console.log("An error ocurred with the server", error);
 });
 
-server.on('close', () => {
-    console.log('Server closed connection');
+server.on("close", () => {
+    console.log("Server closed connection");
 });
