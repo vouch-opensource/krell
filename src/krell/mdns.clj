@@ -31,8 +31,8 @@
                   name (.getName service-event)]
               (when (and (= reg-type type) (match-name name))
                 (let [entry {name (let [info (.getInfo service-event)]
-                                    {:address (.getHostAddress (.getAddress info))
-                                     :port    (.getPort info)})}]
+                                    {:host (.getHostAddress (.getAddress info))
+                                     :port (.getPort info)})}]
                   (swap! endpoint-map merge entry))))))]
     (.addServiceListener mdns-service reg-type service-listener)
     (fn []
