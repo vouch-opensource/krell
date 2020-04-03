@@ -44,7 +44,7 @@ function krellUpdateRoot(cb) {
                 var main = getIn(global, xs.concat("-main"));
                 cb(main());
             });
-
+            goog.require(main);
         } else {
             var main = getIn(global, xs.concat("-main"));
             cb(main());
