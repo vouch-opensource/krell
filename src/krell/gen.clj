@@ -45,15 +45,14 @@
     (spit (io/file (:output-dir opts) "krell_repl.js")
       source)))
 
-(defn write-main-js [opts]
+(defn krell-main-js [opts]
   (let [source (slurp
                  (if (= :none (:optimizations opts))
                    (io/resource "main.dev.js")
                    (io/resource "main.prod.js")))]
-    (spit (io/file (:output-to opts))
-      (-> source
-        (string/replace "$KRELL_OUTPUT_DIR" (:output-dir opts))
-        (string/replace "$KRELL_MAIN_NS" (munge (:main opts)))))))
+    (-> source
+      (string/replace "$KRELL_OUTPUT_DIR" (:output-dir opts))
+      (string/replace "$KRELL_MAIN_NS" (str (munge (:main opts)))))))
 
 (comment
 
