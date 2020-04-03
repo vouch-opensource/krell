@@ -1,4 +1,4 @@
-import {onSourceLoad} from '$KRELL_OUTPUT_DIR/krell_repl.js';
+import {onSourceLoad} from './krell_repl.js';
 
 var main = '$KRELL_MAIN_NS';
 

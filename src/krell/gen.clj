@@ -54,7 +54,6 @@
                    (io/resource "main.dev.js")
                    (io/resource "main.prod.js")))]
     (-> source
-      (string/replace "$KRELL_OUTPUT_DIR" (:output-dir opts))
       (string/replace "$KRELL_MAIN_NS" (str (munge (:main opts)))))))
 
 (comment
