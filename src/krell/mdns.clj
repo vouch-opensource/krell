@@ -4,7 +4,7 @@
            [javax.jmdns JmDNS ServiceListener]))
 
 (defn rn-repl? [name]
-  (string/starts-with? name "rn.repl"))
+  (string/starts-with? name "krell.repl"))
 
 ;; TODO: allow users to choose a la Ambly
 (defn choose-default [endpoint-map]

@@ -24,7 +24,7 @@ zeroconf.on("resolved", service => {
 
 zeroconf.scan("http", "tcp", "local.");
 
-zeroconf.publishService("http", "tcp", "local.", "rn.repl", 5002);
+zeroconf.publishService("http", "tcp", "local.", "krell.repl", 5002);
 
 // =============================================================================
 // REPL Server
