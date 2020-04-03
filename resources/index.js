@@ -13,8 +13,9 @@ import {krellUpdateRoot} from './$KRELL_OUTPUT_TO';
  * but we want to treat both cases the same.
  */
 class KrellRoot extends React.Component {
-    getInitialState() {
-        return {loaded: false}
+    constructor(props) {
+        super(props);
+        this.state = {loaded: false, root: null};
     }
 
     render() {
