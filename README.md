@@ -37,6 +37,7 @@ Native project:
 
 * [react-native-tcp-socket](https://github.com/Rapsssito/react-native-tcp-socket)
 * [react-native-zero-conf](https://github.com/balthazar/react-native-zeroconf)
+* [react-native-device-info](https://github.com/react-native-community/react-native-device-info#getdeviceid)
 
 ## REPL
 
