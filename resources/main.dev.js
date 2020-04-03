@@ -28,10 +28,24 @@ function exists(obj, xs) {
 }
 
 function getIn(obj, xs) {
-    if(xs.length === 0) {
+    if(obj === null) {
         return obj;
     } else {
-        return getIn(obj[xs[0]], xs.slice(0));
+        if (xs.length === 0) {
+            return obj;
+        } else {
+            return getIn(obj[xs[0]], xs.slice(0));
+        }
+    }
+}
+
+function getMainFn(ns) {
+    var xs = ns.split(".").concat(["_main"]),
+        fn = getIn(global, xs);
+    if(fn) {
+        return fn;
+    } else {
+        throw new Error("Could not find -main fn in namespace " + ns);
     }
 }
 
@@ -41,13 +55,11 @@ function krellUpdateRoot(cb) {
         if(!exists(global, xs)) {
             var path = goog.debugLoader_.getPathFromDeps_(main);
             onSourceLoad(path, function() {
-                var fn = getIn(global, xs.concat("-main"));
-                cb(fn());
+                cb(getMainFn(main));
             });
             goog.require(main);
         } else {
-            var fn = getIn(global, xs.concat("-main"));
-            cb(fn());
+            cb(getMainFn(main));
         }
     });
 }
