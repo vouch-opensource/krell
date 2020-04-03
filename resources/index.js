@@ -3,7 +3,12 @@
  */
 
 import React from 'react';
-import {AppRegistry} from 'react-native';
+import {
+    AppRegistry,
+    View,
+    Text
+} from 'react-native';
+
 import {name as appName} from './app.json';
 import {krellUpdateRoot} from './$KRELL_OUTPUT_TO';
 
@@ -26,10 +31,10 @@ class KrellRoot extends React.Component {
                 justifyContent: 'center'
             };
             return (
-                <ReactNative.View style={plainStyle}>
-                    <ReactNative.Text>Waiting for Krell to load
-                        files.</ReactNative.Text>
-                </ReactNative.View>
+                <View style={plainStyle}>
+                    <Text>Waiting for Krell to load
+                        files.</Text>
+                </View>
             );
         }
         return this.state.root;
