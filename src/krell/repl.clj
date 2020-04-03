@@ -196,7 +196,7 @@
      :npm-deps      true
      :output-dir    ".krell_repl"
      :target        :nodejs
-     ;; TODO: add :target-fn
+     :target-fn     'krell.gen/write-main-js
      ::cli/commands {:groups
                      {::cli/main&compile
                       {:desc "init options"

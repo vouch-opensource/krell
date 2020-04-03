@@ -33,10 +33,17 @@
 
 (defn write-index-js [opts]
   (let [source (slurp (io/resource "index.js"))]
+    ;; TODO: just writing this out to the top level, can we allow this to be
+    ;; in a different location?
     (spit (io/file "index.js")
       (-> source
         (string/replace "$KRELL_OUTPUT_TO" (:output-to opts))
         (string/replace "$KRELL_OUTPUT_DIR" (:output-dir opts))))))
+
+(defn write-repl-js [opts]
+  (let [source (slurp (io/resource "krell_repl.js"))]
+    (spit (io/file (:output-dir opts) "krell_repl.js")
+      source)))
 
 (defn write-main-js [opts]
   (let [source (slurp
