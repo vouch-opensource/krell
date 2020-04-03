@@ -28,14 +28,10 @@ function exists(obj, xs) {
 }
 
 function getIn(obj, xs) {
-    if(obj === null) {
-        return obj;
+    if((xs.length === 0) || (obj == null)) {
+        return null;
     } else {
-        if (xs.length === 0) {
-            return obj;
-        } else {
-            return getIn(obj[xs[0]], xs.slice(0));
-        }
+        return getIn(obj[xs[0]], xs.slice(0));
     }
 }
 
