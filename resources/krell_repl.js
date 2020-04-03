@@ -57,7 +57,6 @@ global.require = function(lib) {
 };
 
 var notifyListeners = function(request) {
-    console.log("Notify listeners", request);
     var path = request.value,
         xs = libLoadListeners[path] || [];
 
