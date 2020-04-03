@@ -3,6 +3,7 @@
 
 ;; TODO: check that either -re is already -re krell.repl or not
 ;; supplied
+;; TODO: should we set :analyze-path always?
 (defn -main [& args]
   (try
     (apply cljs.main/-main (concat ["-re" "krell.repl"] args))

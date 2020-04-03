@@ -144,6 +144,7 @@
            deps       (closure/add-dependencies opts core-js)
            env        (ana/empty-env)
            repl-deps  (io/file output-dir "rn_repl_deps.js")
+           cljs-deps  (io/file output-dir "cljs_deps.js")
            base-path  (.getPath (io/file (:output-dir opts) "goog"))]
        ;; output unoptimized code and the deps file
        ;; for all compiled namespaces
@@ -166,6 +167,9 @@
          (rn-eval repl-env
            (slurp (io/resource "goog/deps.js"))))
        (rn-eval repl-env (slurp repl-deps))
+       (when (.exists cljs-deps)
+         (rn-eval repl-env
+           (slurp (io/resource "goog/deps.js"))))
        (when-not (core-loaded? repl-env)
          (repl/evaluate-form repl-env env "<cljs repl>"
            '(do
