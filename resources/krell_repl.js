@@ -3,6 +3,7 @@ import Zeroconf from "react-native-zeroconf";
 import {npmDeps} from "./rt.js";
 
 var evaluate = eval;
+var libLoadListeners = {};
 
 // =============================================================================
 // ZeroConf Service Publication / Discovery
@@ -57,12 +58,18 @@ global.require = function(lib) {
 
 var notifyListeners = function(request) {
     console.log("Notify listeners", request);
+    var path = request.value,
+        xs = libLoadListeners[path];
+    xs.forEach(function(x) {
+        x();
+    });
 };
 
-var onLibLoad = function(ns) {
-    if(typeof goog !== "undefined") {
-
+var onLibLoad = function(ns, cb) {
+    if(typeof libLoadListeners[ns] === "undefined") {
+        libLoadListeners[ns] = [];
     }
+    libLoadListeners[ns].push(cb);
 };
 
 var server = TcpSocket.createServer(function (socket) {
