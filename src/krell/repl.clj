@@ -119,71 +119,75 @@
 
 (defn setup
   ([repl-env] (setup repl-env nil))
-  ([{:keys [host port socket state] :as repl-env} opts]
-   (when-not @socket
-     (loop [r nil]
-       (when-not (= r "ready")
-         (Thread/sleep 50)
-         (try
-           (reset! socket (create-socket host port))
-           (catch Exception e
-             (println e)))
-         (if @socket
-           (recur (read-response (:in @socket)))
-           (recur nil))))
-     (.start (Thread. (bound-fn [] (event-loop repl-env (:in @socket)))))
-     ;; compile cljs.core & its dependencies, goog/base.js must be available
-     ;; for bootstrap to load, use new closure/compile as it can handle
-     ;; resources in JARs
-     (let [output-dir (io/file (util/output-directory opts))
-           core       (io/resource "cljs/core.cljs")
-           core-js    (closure/compile core
-                        (assoc opts :output-file
-                          (closure/src-file->target-file
-                            core (dissoc opts :output-dir))))
-           deps       (closure/add-dependencies opts core-js)
-           env        (ana/empty-env)
-           repl-deps  (io/file output-dir "krell_repl_deps.js")
-           cljs-deps  (io/file output-dir "cljs_deps.js")
-           base-path  (.getPath (io/file (:output-dir opts) "goog"))]
-       ;; output unoptimized code and the deps file
-       ;; for all compiled namespaces
-       (apply closure/output-unoptimized
-         (assoc opts
-           :output-to (.getPath repl-deps))
-         deps)
-       ;; prevent auto-loading of deps.js - not really necessary since
-       ;; we write our own and it will override google's dep.js entries
-       (rn-eval repl-env
-         "var CLOSURE_NO_DEPS = true;")
-       (rn-eval repl-env
-         (str "var CLOSURE_BASE_PATH = \"" base-path File/separator "\";"))
-       ;; Only ever load goog base *once*, all the dep
-       ;; graph stuff is there an it needs to be preserved
-       ;; krell_repl.js declares goog as an object
-       (when-not (base-loaded? repl-env)
+  ([{:keys [socket] :as repl-env} opts]
+   (let [[bonjour-name {:keys [host port] :as ep}]
+         (mdns/discover (boolean (:choose-first (:options repl-env))))]
+     (println
+       (str "\nConnecting to " (mdns/bonjour-name->display-name bonjour-name) " ...\n"))
+     (when-not @socket
+       (loop [r nil]
+         (when-not (= r "ready")
+           (Thread/sleep 50)
+           (try
+             (reset! socket (create-socket host port))
+             (catch Exception e
+               (println e)))
+           (if @socket
+             (recur (read-response (:in @socket)))
+             (recur nil))))
+       (.start (Thread. (bound-fn [] (event-loop repl-env (:in @socket)))))
+       ;; compile cljs.core & its dependencies, goog/base.js must be available
+       ;; for bootstrap to load, use new closure/compile as it can handle
+       ;; resources in JARs
+       (let [output-dir (io/file (util/output-directory opts))
+             core (io/resource "cljs/core.cljs")
+             core-js (closure/compile core
+                       (assoc opts :output-file
+                                   (closure/src-file->target-file
+                                     core (dissoc opts :output-dir))))
+             deps (closure/add-dependencies opts core-js)
+             env (ana/empty-env)
+             repl-deps (io/file output-dir "krell_repl_deps.js")
+             cljs-deps (io/file output-dir "cljs_deps.js")
+             base-path (.getPath (io/file (:output-dir opts) "goog"))]
+         ;; output unoptimized code and the deps file
+         ;; for all compiled namespaces
+         (apply closure/output-unoptimized
+           (assoc opts
+             :output-to (.getPath repl-deps))
+           deps)
+         ;; prevent auto-loading of deps.js - not really necessary since
+         ;; we write our own and it will override google's dep.js entries
          (rn-eval repl-env
-           (slurp (io/resource "goog/base.js")))
+           "var CLOSURE_NO_DEPS = true;")
          (rn-eval repl-env
-           (slurp (io/resource "goog/deps.js"))))
-       (rn-eval repl-env (slurp repl-deps))
-       (when (.exists cljs-deps)
-         (rn-eval repl-env (slurp cljs-deps)))
-       (when-not (core-loaded? repl-env)
-         (repl/evaluate-form repl-env env "<cljs repl>"
-           '(do
-              (.require js/goog "cljs.core")))
-         ;; TODO: we can't merge this with the above, but note this doesn't work
-         ;; in general (even with plain Closure JavaScript), require runs a bunch of
-         ;; async loads and the following JS expression won't have access to any defs.
-         ;; it only works in the Node.js REPL because we have the option for sync
-         ;; loads - this is not possible in React Native
-         (repl/evaluate-form repl-env env "<cljs repl>"
-           '(enable-console-print!))
-         (bootstrap/install-repl-goog-require repl-env env))
-       (rn-eval repl-env
-         (str "goog.global.CLOSURE_UNCOMPILED_DEFINES = "
-           (json/write-str (:closure-defines opts)) ";"))))))
+           (str "var CLOSURE_BASE_PATH = \"" base-path File/separator "\";"))
+         ;; Only ever load goog base *once*, all the dep
+         ;; graph stuff is there an it needs to be preserved
+         ;; krell_repl.js declares goog as an object
+         (when-not (base-loaded? repl-env)
+           (rn-eval repl-env
+             (slurp (io/resource "goog/base.js")))
+           (rn-eval repl-env
+             (slurp (io/resource "goog/deps.js"))))
+         (rn-eval repl-env (slurp repl-deps))
+         (when (.exists cljs-deps)
+           (rn-eval repl-env (slurp cljs-deps)))
+         (when-not (core-loaded? repl-env)
+           (repl/evaluate-form repl-env env "<cljs repl>"
+             '(do
+                (.require js/goog "cljs.core")))
+           ;; TODO: we can't merge this with the above, but note this doesn't work
+           ;; in general (even with plain Closure JavaScript), require runs a bunch of
+           ;; async loads and the following JS expression won't have access to any defs.
+           ;; it only works in the Node.js REPL because we have the option for sync
+           ;; loads - this is not possible in React Native
+           (repl/evaluate-form repl-env env "<cljs repl>"
+             '(enable-console-print!))
+           (bootstrap/install-repl-goog-require repl-env env))
+         (rn-eval repl-env
+           (str "goog.global.CLOSURE_UNCOMPILED_DEFINES = "
+             (json/write-str (:closure-defines opts)) ";")))))))
 
 (defn krell-compile
   [repl-env {:keys [options] :as cfg}]
@@ -199,7 +203,7 @@
           (fn [js]
             (str js (gen/krell-main-js options))))))))
 
-(defrecord ReactNativeEnv [host port path socket state]
+(defrecord ReactNativeEnv [options socket state]
   repl/IReplEnvOptions
   (-repl-options [this]
     {:nodejs-rt     false
@@ -246,21 +250,7 @@
         (close-socket sock)))))
 
 (defn repl-env* [options]
-  (let [ep-map  (atom {})]
-    (mdns/setup
-      {:type         "http"
-       :protocol     "tcp"
-       :domain       "local."
-       :endpoint-map ep-map
-       :match-name   mdns/rn-repl?})
-    (let [default (mdns/choose-default @ep-map)
-          {:keys [host port path]}
-          (merge
-            {:host "localhost"
-             :port 5002}
-            default
-            options)]
-      (ReactNativeEnv. host port path (atom nil) (atom nil)))))
+  (ReactNativeEnv. options (atom nil) (atom nil)))
 
 (defn repl-env
   "Construct a React Native evaluation environment."
@@ -269,20 +259,3 @@
 
 (defn -main [& args]
   (apply cli/main repl-env args))
-
-(comment
-
-  (def ep-map (atom {}))
-
-  (mdns/setup
-    {:type "http"
-     :protocol "tcp"
-     :domain "local."
-     :endpoint-map ep-map
-     :match-name mdns/rn-repl?})
-
-  (mdns/choose-default @ep-map)
-
-  (cljs.repl/repl* (repl-env) {})
-
-  )
