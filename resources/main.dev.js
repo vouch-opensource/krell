@@ -44,10 +44,6 @@ function krellUpdateRoot(cb) {
             // listen for the path to load
             // invoke -main function in the main ns
             // invoke cb
-        } else {
-            // PROD CASE
-            // invoke -main function in the main ns
-            // invoke cb
         }
     });
 }
