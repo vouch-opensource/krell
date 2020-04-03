@@ -37,15 +37,18 @@ function getIn(obj, xs) {
 
 function krellUpdateRoot(cb) {
     waitForCore(function() {
-        // then load the main ns
-        // use debugloader to get the path from the name of the cs
-        // listen for the path to load
-        // invoke -main function in the main ns
-        // invoke cb
-
-        // PROD CASE
-        // invoke -main function in the main ns
-        // invoke cb
+        var xs = main.split(".");
+        if(!exists(global, xs)) {
+            // then load the main ns
+            // use debugloader to get the path from the name of the cs
+            // listen for the path to load
+            // invoke -main function in the main ns
+            // invoke cb
+        } else {
+            // PROD CASE
+            // invoke -main function in the main ns
+            // invoke cb
+        }
     });
 }
 
