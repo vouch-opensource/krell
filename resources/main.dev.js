@@ -31,7 +31,7 @@ function getIn(obj, xs) {
     if((xs.length === 0) || (obj == null)) {
         return null;
     } else {
-        return getIn(obj[xs[0]], xs.slice(0));
+        return getIn(obj[xs[0]], xs.slice(1));
     }
 }
 
