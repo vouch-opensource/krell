@@ -1,4 +1,4 @@
-import '$KRELL_OUTPUT_DIR/krell_repl.js';
+import {onSourceLoad} from '$KRELL_OUTPUT_DIR/krell_repl.js';
 
 var main = '$KRELL_MAIN_NS';
 
@@ -39,11 +39,15 @@ function krellUpdateRoot(cb) {
     waitForCore(function() {
         var xs = main.split(".");
         if(!exists(global, xs)) {
-            // then load the main ns
-            // use debugloader to get the path from the name of the cs
-            // listen for the path to load
-            // invoke -main function in the main ns
-            // invoke cb
+            var path = goog.debugLoader_.getPathFromDeps_(main);
+            onSourceLoad(path, function() {
+                var main = getIn(global, xs.concat("-main"));
+                cb(main());
+            });
+
+        } else {
+            var main = getIn(global, xs.concat("-main"));
+            cb(main());
         }
     });
 }

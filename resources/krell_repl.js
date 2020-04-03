@@ -65,7 +65,7 @@ var notifyListeners = function(request) {
     });
 };
 
-var onLibLoad = function(ns, cb) {
+var onSourceLoad = function(path, cb) {
     if(typeof libLoadListeners[ns] === "undefined") {
         libLoadListeners[ns] = [];
     }
@@ -167,3 +167,7 @@ server.on("error", error => {
 server.on("close", () => {
     console.log("Server closed connection");
 });
+
+module.exports = {
+    onSourceLoad: onSourceLoad
+};
