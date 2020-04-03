@@ -41,13 +41,13 @@ function krellUpdateRoot(cb) {
         if(!exists(global, xs)) {
             var path = goog.debugLoader_.getPathFromDeps_(main);
             onSourceLoad(path, function() {
-                var main = getIn(global, xs.concat("-main"));
-                cb(main());
+                var fn = getIn(global, xs.concat("-main"));
+                cb(fn());
             });
             goog.require(main);
         } else {
-            var main = getIn(global, xs.concat("-main"));
-            cb(main());
+            var fn = getIn(global, xs.concat("-main"));
+            cb(fn());
         }
     });
 }
