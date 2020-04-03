@@ -66,10 +66,10 @@ var notifyListeners = function(request) {
 };
 
 var onSourceLoad = function(path, cb) {
-    if(typeof libLoadListeners[ns] === "undefined") {
-        libLoadListeners[ns] = [];
+    if(typeof libLoadListeners[path] === "undefined") {
+        libLoadListeners[path] = [];
     }
-    libLoadListeners[ns].push(cb);
+    libLoadListeners[path].push(cb);
 };
 
 var server = TcpSocket.createServer(function (socket) {
