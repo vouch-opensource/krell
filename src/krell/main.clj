@@ -7,6 +7,8 @@
 (defn -main [& args]
   (try
     (apply cljs.main/-main (concat ["-re" "krell.repl"] args))
+    (catch Exception e
+      (.printStackTrace e))
     (finally
       ;; TODO: shouldn't need this
       (System/exit 0))))
