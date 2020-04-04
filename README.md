@@ -51,12 +51,6 @@ Native project:
 * [react-native-zeroconf](https://github.com/balthazar/react-native-zeroconf)
 * [react-native-device-info](https://github.com/react-native-community/react-native-device-info#getdeviceid)
 
-The reinstall your pods:
-
-```
-rm -rf Pods Podfile.lock; pod install
-``` 
-
 ## REPL
 
 ```
