@@ -165,7 +165,6 @@
            (str "var CLOSURE_BASE_PATH = \"" base-path File/separator "\";"))
          ;; Only ever load goog base *once*, all the dep
          ;; graph stuff is there an it needs to be preserved
-         ;; krell_repl.js declares goog as an object
          (when-not (base-loaded? repl-env)
            (rn-eval repl-env
              (slurp (io/resource "goog/base.js")))
