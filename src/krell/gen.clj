@@ -45,6 +45,9 @@
       (into #{} (mapcat #(map str %)) (map :requires cljs-libs))
       (into #{} (keys npm-libs)))))
 
+(defn changed? [source out-file]
+  (not= source (slurp out-file)))
+
 (defn write-rt-js
   "Write the runtime module support file. This generated file allows REPLs
    to require node_module libraries at runtime."
@@ -52,8 +55,10 @@
   (let [npm-deps (npm-requires opts)
         source   (rt-js npm-deps)
         out-file (io/file (:output-dir opts) "rt.js")]
-    (util/mkdirs out-file)
-    (spit out-file source)))
+    (when (or (not (.exists out-file))
+              (changed? source out-file))
+      (util/mkdirs out-file)
+      (spit out-file source))))
 
 (defn write-index-js
   "Write the Krell index.js file which bootstraps the Krell application.
