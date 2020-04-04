@@ -1,5 +1,6 @@
 import TcpSocket from "react-native-tcp-socket";
 import Zeroconf from "react-native-zeroconf";
+import { getApplicationName, getDeviceId } from 'react-native-device-info';
 import {npmDeps} from "./rt.js";
 
 var evaluate = eval;
@@ -9,6 +10,10 @@ var libLoadListeners = {};
 // ZeroConf Service Publication / Discovery
 
 const zeroconf = new Zeroconf();
+
+var bonjourName = function() {
+    return "krell.repl" + getApplicationName() + " " + getDeviceId();
+};
 
 zeroconf.on("start", () => {
     console.log("Scan started");
@@ -24,7 +29,7 @@ zeroconf.on("resolved", service => {
 
 zeroconf.scan("http", "tcp", "local.");
 
-zeroconf.publishService("http", "tcp", "local.", "krell.repl", 5002);
+zeroconf.publishService("http", "tcp", "local.", bonjourName(), 5002);
 
 // =============================================================================
 // REPL Server
