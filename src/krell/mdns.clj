@@ -1,6 +1,6 @@
 (ns krell.mdns
   (:require [clojure.string :as string])
-  (:import [java.net InetAddress NetworkInterface]
+  (:import [java.net InetAddress Inet4Address NetworkInterface]
            [javax.jmdns JmDNS ServiceListener]))
 
 (def krell-prefix "krell.repl")
@@ -52,6 +52,31 @@
   (some-> ip
     ip-address->inet-addr
     NetworkInterface/getByInetAddress))
+
+(defn address-type
+  "Takes an IP address and returns a keyword in #{:ipv4 :ipv6}
+  indicating the type of the address, or nil if the type could not
+  be determined"
+  [ip]
+  (if-let [inet-address (ip-address->inet-addr ip)]
+    (if (instance? Inet4Address inet-address)
+      :ipv4
+      :ipv6)))
+
+(defn address-type->localhost-address
+  "Given an address type, returns the localhost address."
+  [address-type]
+  (address-type {:ipv4 "127.0.0.1" :ipv6 "::1"}))
+
+(defn local-address-if
+  "Takes an IP address and returns the localhost address if the
+  address happens to be local to this machine."
+  [ip]
+  (if (local? ip)
+    (-> ip
+      address-type
+      address-type->localhost-address)
+    ip))
 
 (defn bonjour-name->display-name
   "Converts an Ambly Bonjour service name to a display name

@@ -121,9 +121,10 @@
   ([repl-env] (setup repl-env nil))
   ([{:keys [socket] :as repl-env} opts]
    (let [[bonjour-name {:keys [host port] :as ep}]
-         (mdns/discover (boolean (:choose-first (:options repl-env))))]
+         (mdns/discover (boolean (:choose-first (:options repl-env))))
+         host (mdns/local-address-if host)]
      (println
-       (str "\nConnecting to " (mdns/bonjour-name->display-name bonjour-name) " ...\n"))
+       (str "\nConnecting to " (mdns/bonjour-name->display-name bonjour-name) " (" host ":" port ")" " ...\n"))
      (when-not @socket
        (loop [r nil]
          (when-not (= r "ready")
