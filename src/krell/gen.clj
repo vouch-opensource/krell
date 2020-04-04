@@ -59,13 +59,15 @@
   "Write the Krell index.js file which bootstraps the Krell application.
   See resources/index.js"
   [opts]
-  (let [source (slurp (io/resource "index.js"))]
+  (let [source   (slurp (io/resource "index.js"))
+        out-file (io/file "index.js")]
     ;; TODO: just writing this out to the top level, can we allow this to be
     ;; in a different location?
-    (spit (io/file "index.js")
-      (-> source
-        (string/replace "$KRELL_OUTPUT_TO" (:output-to opts))
-        (string/replace "$KRELL_OUTPUT_DIR" (:output-dir opts))))))
+    (when-not (.exists out-file)
+      (spit out-file
+        (-> source
+          (string/replace "$KRELL_OUTPUT_TO" (:output-to opts))
+          (string/replace "$KRELL_OUTPUT_DIR" (:output-dir opts)))))))
 
 (defn write-repl-js
   "Write out the REPL support code. See resources/krell_repl.js"
