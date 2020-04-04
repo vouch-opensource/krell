@@ -30,6 +30,14 @@ via `yarn` or `npm` just like any ClojureScript library.
 If you specify a higher optimization setting like `:simple` or `:advanced`,
 Krell generates a single file output without the REPL dependencies.
 
+## Quick Start
+
+Create a new React Native project:
+
+```
+react-native init --version 0.61.5 AwesomeApp
+```
+
 ## REPL Dependencies
 
 If you intend to use the REPL you must install the following into your React
@@ -39,25 +47,6 @@ Native project:
 * [react-native-zero-conf](https://github.com/balthazar/react-native-zeroconf)
 * [react-native-device-info](https://github.com/react-native-community/react-native-device-info#getdeviceid)
 
-### React Native >=0.61
-
-You will need to disable Flipper for the time being. Edit `ios/Podfile` to
-remove the Flipper support:
-
-```
-...
-  use_native_modules!
-
-  # Enables Flipper.
-  #
-  # Note that if you have use_frameworks! enabled, Flipper will not work and
-  # you should disable these next few lines.
-  # add_flipper_pods!
-  # post_install do |installer|
-  #   flipper_post_install(installer)
-  # end
-...
-```
 
 The reinstall your pods:
 
