@@ -199,10 +199,8 @@
     (cli/default-compile repl-env
       (cond-> cfg
         (not (or (= :none opt-level) (nil? opt-level)))
-        (update :options
-          :output-wrapper
-          (fn [js]
-            (str js (gen/krell-main-js options))))))))
+        (assoc-in [:options :output-wrapper]
+          (fn [source] (str source (gen/krell-main-js options))))))))
 
 (defrecord ReactNativeEnv [options socket state]
   repl/IReplEnvOptions
