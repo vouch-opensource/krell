@@ -79,8 +79,8 @@
     ip))
 
 (defn bonjour-name->display-name
-  "Converts an Ambly Bonjour service name to a display name
-  (stripping off ambly-bonjour-name-prefix)."
+  "Converts an Krell Bonjour service name to a display name
+  (stripping off krell-prefix)."
   [bonjour-name]
   (subs bonjour-name (count krell-prefix)))
 
