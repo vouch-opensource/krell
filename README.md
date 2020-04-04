@@ -35,8 +35,12 @@ Krell generates a single file output without the REPL dependencies.
 Create a new React Native project:
 
 ```
-react-native init --version 0.61.5 AwesomeApp
+npx react-native init --version 0.61.5 AwesomeApp
 ```
+
+React Native `0.62.X` does not currently work due to a dependency conflict
+with Flipper and `react-native-tcp-socket` around the native `CocoaAsyncSocket`
+dependency.
 
 ## REPL Dependencies
 
