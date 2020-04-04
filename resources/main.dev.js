@@ -33,7 +33,6 @@ function getIn(obj, xs) {
     } else if(xs.length === 0) {
         return obj;
     } else {
-        console.log("RECURSION", xs);
         return getIn(obj[xs[0]], xs.slice(1));
     }
 }
