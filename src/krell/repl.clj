@@ -189,6 +189,10 @@
            (str "goog.global.CLOSURE_UNCOMPILED_DEFINES = "
              (json/write-str (:closure-defines opts)) ";")))))))
 
+(defn krell-choose-first-opt
+  [cfg value]
+  (assoc-in cfg [:repl-env-options :choose-first] (= value "true")))
+
 (defn krell-compile
   [repl-env {:keys [options] :as cfg}]
   (gen/write-rt-js options)
@@ -222,7 +226,12 @@
                              (assert (#{"node" "nodejs"} target) "Invalid --target, only nodejs supported")
                              cfg)
                        :arg "name"
-                       :doc (str "The JavaScript target. Supported values: node or nodejs.")}}
+                       :doc (str "The JavaScript target. Supported values: node or nodejs.")}
+                      ["-f" "--choose-first"]
+                      {:group ::cli/main
+                       :fn krell-choose-first-opt
+                       :arg "bool"
+                       :doc (str "Choose the first discovered available REPL service.")}}
                      :main
                      {["-s" "--serve"]
                       {:fn (fn [cfg opt]

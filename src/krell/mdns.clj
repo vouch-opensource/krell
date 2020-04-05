@@ -125,9 +125,8 @@
       ;; Sleep a little more to catch stragglers
       (Thread/sleep 500)
       (loop [cep-map @ep-map]
-        (println)
-        (print-discovered cep-map)
         (when-not choose-first?
+          (print-discovered cep-map)
           (println "\n[R] Refresh\n")
           (print "Choice: ")
           (flush))
