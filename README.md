@@ -30,18 +30,6 @@ via `yarn` or `npm` just like any ClojureScript library.
 If you specify a higher optimization setting like `:simple` or `:advanced`,
 Krell generates a single file output without the REPL dependencies.
 
-## Quick Start
-
-Create a new React Native project:
-
-```
-npx react-native init --version 0.61.5 AwesomeApp
-```
-
-React Native `0.62.X` does not currently work due to a dependency conflict
-with Flipper and `react-native-tcp-socket` around the native `CocoaAsyncSocket`
-dependency.
-
 ## REPL Dependencies
 
 If you intend to use the REPL you must install the following into your React
