@@ -85,10 +85,10 @@
   (rn-eval repl-env
     (str "goog.require('" (comp/munge (first provides)) "')")))
 
-(defn event-loop [{:keys [state] :as repl-env} in]
+(defn event-loop [{:keys [state socket] :as repl-env}]
   (while (not (:done @state))
     (try
-      (let [res (read-response in)]
+      (let [res (read-response (:in @socket))]
         (try
           (let [{:keys [type value] :as event}
                 (json/read-str res :key-fn keyword)]
@@ -145,7 +145,7 @@
        (str "\nConnecting to " (mdns/bonjour-name->display-name bonjour-name) " (" host ":" port ")" " ...\n"))
      (when-not @socket
        (connect repl-env)
-       (.start (Thread. (bound-fn [] (event-loop repl-env (:in @socket)))))
+       (.start (Thread. (bound-fn [] (event-loop repl-env))))
        ;; compile cljs.core & its dependencies, goog/base.js must be available
        ;; for bootstrap to load, use new closure/compile as it can handle
        ;; resources in JARs
