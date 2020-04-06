@@ -197,8 +197,8 @@
                           :output-file
                           (closure/src-file->target-file
                             core (dissoc opts :output-dir))))
-             deps      (closure/add-dependencies opts core-js)
-             repl-deps (io/file output-dir "krell_repl_deps.js")]
+             deps       (closure/add-dependencies opts core-js)
+             repl-deps  (io/file output-dir "krell_repl_deps.js")]
          ;; output unoptimized code and the deps file
          ;; for all compiled namespaces
          (apply closure/output-unoptimized
