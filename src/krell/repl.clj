@@ -193,10 +193,9 @@
        (let [output-dir (io/file (cljs-util/output-directory opts))
              core       (io/resource "cljs/core.cljs")
              core-js    (closure/compile core
-                        (assoc opts
-                          :output-file
-                          (closure/src-file->target-file
-                            core (dissoc opts :output-dir))))
+                          (assoc opts :output-file
+                            (closure/src-file->target-file
+                              core (dissoc opts :output-dir))))
              deps       (closure/add-dependencies opts core-js)
              repl-deps  (io/file output-dir "krell_repl_deps.js")]
          ;; output unoptimized code and the deps file
