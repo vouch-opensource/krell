@@ -5,11 +5,12 @@
             [cljs.compiler :as comp]
             [cljs.repl :as repl]
             [cljs.repl.bootstrap :as bootstrap]
-            [cljs.util :as util]
+            [cljs.util :as cljs-util]
             [clojure.data.json :as json]
             [clojure.java.io :as io]
             [krell.gen :as gen]
-            [krell.mdns :as mdns])
+            [krell.mdns :as mdns]
+            [krell.util :as util])
   (:import [java.io File BufferedReader BufferedWriter IOException]
            [java.net Socket]
            [java.util.concurrent LinkedBlockingQueue]))
@@ -102,7 +103,6 @@
             (.flush *out*))))
       (catch IOException e
         (.printStackTrace e *err*)
-        ;; TODO: switch to ex-info?
         (repl/tear-down repl-env)))))
 
 (defn base-loaded? [repl-env]
@@ -117,30 +117,39 @@
        (rn-eval repl-env
          "(function(){return (typeof cljs !== 'undefined');})()"))))
 
+(defn connect [{:keys [options socket state] :as repl-env}]
+  (let [start (util/now)
+        {:keys [host port]} @state]
+    (loop [r nil]
+      (if (< (:connect-timeout options) (util/elapsed start))
+        (throw
+          (ex-info "Could not connect Krell REPL" {}))
+        (when-not (= r "ready")
+          (Thread/sleep 50)
+          (try
+            (reset! socket (create-socket host port))
+            (catch Exception e
+              (println e)))
+          (if @socket
+            (recur (read-response (:in @socket)))
+            (recur nil)))))))
+
 (defn setup
   ([repl-env] (setup repl-env nil))
-  ([{:keys [socket] :as repl-env} opts]
+  ([{:keys [state socket] :as repl-env} opts]
    (let [[bonjour-name {:keys [host port] :as ep}]
          (mdns/discover (boolean (:choose-first (:options repl-env))))
          host (mdns/local-address-if host)]
+     (swap! state merge {:host host :port port})
      (println
        (str "\nConnecting to " (mdns/bonjour-name->display-name bonjour-name) " (" host ":" port ")" " ...\n"))
      (when-not @socket
-       (loop [r nil]
-         (when-not (= r "ready")
-           (Thread/sleep 50)
-           (try
-             (reset! socket (create-socket host port))
-             (catch Exception e
-               (println e)))
-           (if @socket
-             (recur (read-response (:in @socket)))
-             (recur nil))))
+       (connect repl-env)
        (.start (Thread. (bound-fn [] (event-loop repl-env (:in @socket)))))
        ;; compile cljs.core & its dependencies, goog/base.js must be available
        ;; for bootstrap to load, use new closure/compile as it can handle
        ;; resources in JARs
-       (let [output-dir (io/file (util/output-directory opts))
+       (let [output-dir (io/file (cljs-util/output-directory opts))
              core (io/resource "cljs/core.cljs")
              core-js (closure/compile core
                        (assoc opts :output-file
@@ -205,7 +214,7 @@
         (assoc-in [:options :output-wrapper]
           (fn [source] (str source (gen/krell-main-js options))))))))
 
-(defrecord ReactNativeEnv [options socket state]
+(defrecord KrellEnv [options socket state]
   repl/IReplEnvOptions
   (-repl-options [this]
     {:nodejs-rt     false
@@ -252,12 +261,17 @@
   (-tear-down [this]
     (let [sock @socket]
       (swap! state assoc :done true)
-      (when-not (.isClosed (:socket sock))
+      (when (and (:socket sock)
+                 (not (.isClosed (:socket sock))))
         (write (:out sock) ":cljs/quit")
         (close-socket sock)))))
 
 (defn repl-env* [options]
-  (ReactNativeEnv. options (atom nil) (atom nil)))
+  (KrellEnv.
+    (merge
+      {:connect-timeout 30000}
+      options)
+    (atom nil) (atom nil)))
 
 (defn repl-env
   "Construct a React Native evaluation environment."
