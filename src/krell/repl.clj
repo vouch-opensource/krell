@@ -47,10 +47,10 @@
 
 (declare load-queued-files)
 
-(defn rn-eval
+(defn rn-eval*
   "Evaluate a JavaScript string in the React Native REPL"
   ([repl-env js]
-   (rn-eval repl-env js nil))
+   (rn-eval* repl-env js nil))
   ([repl-env js req]
    (locking eval-lock
      (let [{:keys [out]} @(:socket repl-env)]
@@ -71,6 +71,12 @@
          ;; load any queued files now to simulate sync loads
          (load-queued-files repl-env)
          ret)))))
+
+(defn rn-eval
+  ([repl-env js]
+   (rn-eval repl-env js nil))
+  ([repl-env js req]
+   (rn-eval* repl-env js req)))
 
 (defn load-queued-files [repl-env]
   (loop [{:keys [value] :as load-file-req} (.poll load-queue)]
