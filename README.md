@@ -49,6 +49,12 @@ Ensure that you have the following permissions set in your `AndroidManifest.xml`
 
 ## REPL
 
+If you'd like to connect to Android you need to run the following first:
+
+```
+adb forward tcp:5002 tcp:5002
+```
+
 ```
 clj -m krell.main -co build.edn -r
 ```
