@@ -41,8 +41,7 @@ var loadFile = function(socket, path) {
         type: "load-file",
         value: path
     };
-    socket.write(JSON.stringify(req));
-    socket.write('\0');
+    socket.write(JSON.stringify(req)+"\0");
 };
 
 // NOTE: CLOSURE_LOAD_FILE_SYNC not needed as ClojureScript now transpiles
@@ -86,12 +85,13 @@ var server = TcpSocket.createServer(function (socket) {
     // it doesn't matter which socket we use for loads
     loadFileSocket = socket;
 
-    socket.write("ready");
-    socket.write("\0");
+    socket.write("ready\0");
 
     // TODO: I/O forwarding
 
     socket.on("data", data => {
+        var header = "";
+
         if (data[data.length - 1] !== 0) {
             buffer += data;
         } else {
@@ -101,12 +101,7 @@ var server = TcpSocket.createServer(function (socket) {
             if (data) {
                 data = data.replace(/\0/g, "");
 
-                // ack
-                socket.write(
-                    JSON.stringify({
-                      type: "ack"
-                    }) + "\0"
-                );
+                header = JSON.stringify({type: "ack"})+"\0";
 
                 if (data === ":cljs/quit") {
                     socket.destroy();
@@ -131,28 +126,31 @@ var server = TcpSocket.createServer(function (socket) {
 
             if (err) {
                 socket.write(
+                    header+
                     JSON.stringify({
                         type: "result",
                         status: "exception",
                         value: (typeof cljs != "undefined") ? cljs.repl.error__GT_str(err) : err.toString()
-                    }),
+                    })+"\0"
                 );
             } else {
                 if (ret !== undefined && ret !== null) {
                     socket.write(
+                        header+
                         JSON.stringify({
                             type: "result",
                             status: "success",
                             value: ret.toString(),
-                        }),
+                        })+"\0"
                     );
                 } else {
                     socket.write(
+                        header+
                         JSON.stringify({
                             type: "result",
                             status: "success",
                             value: null,
-                        }),
+                        })+"\0"
                     );
                 }
 
@@ -164,8 +162,6 @@ var server = TcpSocket.createServer(function (socket) {
             req = null;
             ret = null;
             err = null;
-
-            socket.write("\0");
         }
     });
 

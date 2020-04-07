@@ -49,9 +49,12 @@
   "Takes an IP address and returns a truthy value iff the address is local
   to the machine running this code."
   [ip]
-  (some-> ip
-    ip-address->inet-addr
-    NetworkInterface/getByInetAddress))
+  (or
+    ;; Android
+    (string/starts-with? ip "10.0.2")
+    (some-> ip
+      ip-address->inet-addr
+      NetworkInterface/getByInetAddress)))
 
 (defn address-type
   "Takes an IP address and returns a keyword in #{:ipv4 :ipv6}

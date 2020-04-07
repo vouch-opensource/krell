@@ -62,8 +62,8 @@
                       (when req {:request req}))))
        (let [ack (.poll results-queue
                    ^long (:ack-timeout options) TimeUnit/MILLISECONDS)]
-         (if (nil? ack)
-           (throw (ex-info "No ack" {:type :no-ack}))
+         (if (or (nil? ack) (not= "ack" (:type ack)))
+           (throw (ex-info "No ack" {:type :no-ack :queue-value ack}))
            (let [result (.take results-queue)
                  ret (condp = (:status result)
                        "success"
@@ -72,7 +72,12 @@
 
                        "exception"
                        {:status :exception
-                        :value  (:value result)})]
+                        :value  (:value result)}
+                       (throw
+                         (ex-info
+                           (str "Unexpected message type: "
+                             (pr-str (:status result)) )
+                           {:queue-value result})))]
              ;; load any queued files now to simulate sync loads
              (load-queued-files repl-env)
              ret)))))))
@@ -329,7 +334,10 @@
 (defn repl-env* [options]
   (KrellEnv.
     (merge
-      {:ack-timeout     3000
+      ;; need to be careful with :ack-timeout
+      ;; because of the payload size, might be
+      ;; a better way
+      {:ack-timeout     10000
        :connect-timeout 30000
        :eval-timeout    30000}
       options)
