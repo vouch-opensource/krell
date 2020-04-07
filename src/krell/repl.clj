@@ -297,8 +297,9 @@
 (defn repl-env* [options]
   (KrellEnv.
     (merge
-      {:eval-timeout    30000
-       :connect-timeout 30000}
+      {:ack-timeout     3000
+       :connect-timeout 30000
+       :eval-timeout    30000}
       options)
     (atom nil) (atom nil)))
 
