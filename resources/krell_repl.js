@@ -109,7 +109,7 @@ var server = TcpSocket.createServer(function (socket) {
                 );
 
                 if (data === ":cljs/quit") {
-                    server.close();
+                    socket.destroy();
                     return;
                 } else {
                     try {
