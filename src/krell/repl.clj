@@ -63,7 +63,7 @@
        (let [ack (.poll results-queue
                    ^long (:ack-timeout options) TimeUnit/MILLISECONDS)]
          (if (nil? ack)
-           (throw (ex-info "No ack" {:error :no-ack}))
+           (throw (ex-info "No ack" {:type :no-ack}))
            (let [result (.take results-queue)
                  ret (condp = (:status result)
                        "success"
