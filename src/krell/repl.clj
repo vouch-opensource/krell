@@ -59,7 +59,7 @@
                       ;; if there was client driven request then pass on this
                       ;; information back to the client
                       (when req {:request req}))))
-       ;; TODO: beat-skipped-queue
+       ;; TODO: check for ack
        (let [result (.take results-queue)
              ret (condp = (:status result)
                    "success"
