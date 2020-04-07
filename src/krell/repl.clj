@@ -59,6 +59,7 @@
                       ;; if there was client driven request then pass on this
                       ;; information back to the client
                       (when req {:request req}))))
+       ;; TODO: beat-skipped-queue
        (let [result (.take results-queue)
              ret (condp = (:status result)
                    "success"
@@ -72,11 +73,7 @@
          (load-queued-files repl-env)
          ret)))))
 
-(defn rn-eval
-  ([repl-env js]
-   (rn-eval repl-env js nil))
-  ([repl-env js req]
-   (rn-eval* repl-env js req)))
+(declare rn-eval)
 
 (defn load-queued-files [repl-env]
   (loop [{:keys [value] :as load-file-req} (.poll load-queue)]
@@ -108,8 +105,8 @@
             (.write *out* res 0 (.length res))
             (.flush *out*))))
       (catch IOException e
-        (.printStackTrace e *err*)
-        (repl/tear-down repl-env)))))
+        ;; sleep a bit, no need to spin while we wait for a reconnect
+        (Thread/sleep 500)))))
 
 (defn base-loaded? [repl-env]
   (= "true"
@@ -122,23 +119,6 @@
      (:value
        (rn-eval repl-env
          "(function(){return (typeof cljs !== 'undefined');})()"))))
-
-(defn connect [{:keys [options socket state] :as repl-env}]
-  (let [start (util/now)
-        {:keys [host port]} @state]
-    (loop [r nil]
-      (if (< (:connect-timeout options) (util/elapsed start))
-        (throw
-          (ex-info "Could not connect Krell REPL" {}))
-        (when-not (= r "ready")
-          (Thread/sleep 50)
-          (try
-            (reset! socket (create-socket host port))
-            (catch Exception e
-              (println e)))
-          (if @socket
-            (recur (read-response (:in @socket)))
-            (recur nil)))))))
 
 (defn init-js-env
   ([repl-env]
@@ -180,6 +160,41 @@
      (rn-eval repl-env
        (str "goog.global.CLOSURE_UNCOMPILED_DEFINES = "
          (json/write-str (:closure-defines opts)) ";")))))
+
+(defn connect [{:keys [options socket state] :as repl-env}]
+  (let [start (util/now)
+        {:keys [host port]} @state]
+    (loop [r nil]
+      (if (< (:connect-timeout options) (util/elapsed start))
+        (throw
+          (ex-info "Could not connect Krell REPL" {}))
+        (when-not (= r "ready")
+          (Thread/sleep 250)
+          (try
+            (reset! socket (create-socket host port))
+            (catch Exception e
+              (println e)))
+          (if @socket
+            (recur (read-response (:in @socket)))
+            (recur nil)))))))
+
+(defn reconnect [repl-env]
+  ;; clear anything pending in the queues
+  (.clear load-queue)
+  (.clear results-queue)
+  (connect repl-env)
+  (init-js-env repl-env))
+
+(defn rn-eval
+  ([repl-env js]
+   (rn-eval repl-env js nil))
+  ([repl-env js req]
+   (try
+     (rn-eval* repl-env js req)
+     (catch IOException _
+       (reconnect repl-env)
+       {:status :exception
+        :value  "Connection was reset by React Native"}))))
 
 (defn setup
   ([repl-env] (setup repl-env nil))
@@ -282,7 +297,8 @@
 (defn repl-env* [options]
   (KrellEnv.
     (merge
-      {:connect-timeout 30000}
+      {:eval-timeout    30000
+       :connect-timeout 30000}
       options)
     (atom nil) (atom nil)))
 
