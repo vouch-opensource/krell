@@ -270,11 +270,17 @@
 (defrecord KrellEnv [options socket state]
   repl/IReplEnvOptions
   (-repl-options [this]
-    {:nodejs-rt     false
-     :npm-deps      true
+    {
      :output-dir    ".krell_repl"
+
+     ;; RN target defaults
+     :nodejs-rt     false
+     :npm-deps      true
      :target        :nodejs
      :target-fn     'krell.gen/krell-main-js
+
+     ;; cljs.cli extension points
+     ::repl/fast-initial-prompt? :after-setup
      ::cli/commands {:groups
                      {::cli/main&compile
                       {:desc "init options"
@@ -300,7 +306,8 @@
                              (throw "--serve not supported"))
                        :arg "N/A"
                        :doc (str "NOT SUPPORTED")}}}
-     ::cli/compile  krell-compile})
+     ::cli/compile  krell-compile
+     })
   repl/IParseError
   (-parse-error [_ err _]
     (assoc err :value nil))
