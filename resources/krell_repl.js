@@ -101,6 +101,13 @@ var server = TcpSocket.createServer(function (socket) {
             if (data) {
                 data = data.replace(/\0/g, "");
 
+                // ack
+                socket.write(
+                    JSON.stringify({
+                      type: "ack"
+                    }) + "\0"
+                );
+
                 if (data === ":cljs/quit") {
                     server.close();
                     return;

@@ -11,9 +11,10 @@
             [krell.gen :as gen]
             [krell.mdns :as mdns]
             [krell.util :as util])
-  (:import [java.io File BufferedReader BufferedWriter IOException]
+  (:import [clojure.lang ExceptionInfo]
+           [java.io BufferedReader BufferedWriter File IOException]
            [java.net Socket]
-           [java.util.concurrent LinkedBlockingQueue]))
+           [java.util.concurrent LinkedBlockingQueue TimeUnit]))
 
 (def eval-lock (Object.))
 (def results-queue (LinkedBlockingQueue.))
@@ -51,7 +52,7 @@
   "Evaluate a JavaScript string in the React Native REPL"
   ([repl-env js]
    (rn-eval* repl-env js nil))
-  ([repl-env js req]
+  ([{:keys [options] :as repl-env} js req]
    (locking eval-lock
      (let [{:keys [out]} @(:socket repl-env)]
        (write out (json/write-str
@@ -59,19 +60,22 @@
                       ;; if there was client driven request then pass on this
                       ;; information back to the client
                       (when req {:request req}))))
-       ;; TODO: check for ack
-       (let [result (.take results-queue)
-             ret (condp = (:status result)
-                   "success"
-                   {:status :success
-                    :value  (:value result)}
+       (let [ack (.poll results-queue
+                   ^long (:ack-timeout options) TimeUnit/MILLISECONDS)]
+         (if (nil? ack)
+           (throw (ex-info "No ack" {:error :no-ack}))
+           (let [result (.take results-queue)
+                 ret (condp = (:status result)
+                       "success"
+                       {:status :success
+                        :value  (:value result)}
 
-                   "exception"
-                   {:status :exception
-                    :value  (:value result)})]
-         ;; load any queued files now to simulate sync loads
-         (load-queued-files repl-env)
-         ret)))))
+                       "exception"
+                       {:status :exception
+                        :value  (:value result)})]
+             ;; load any queued files now to simulate sync loads
+             (load-queued-files repl-env)
+             ret)))))))
 
 (declare rn-eval)
 
@@ -96,6 +100,7 @@
           (let [{:keys [type value] :as event}
                 (json/read-str res :key-fn keyword)]
             (case type
+              "ack"       (.offer results-queue event)
               "load-file" (.offer load-queue event)
               "result"    (.offer results-queue event)
               (when-let [stream (if (= type "out") *out* *err*)]
@@ -191,10 +196,13 @@
   ([repl-env js req]
    (try
      (rn-eval* repl-env js req)
-     (catch IOException _
-       (reconnect repl-env)
-       {:status :exception
-        :value  "Connection was reset by React Native"}))))
+     (catch ExceptionInfo e
+       (if (= :no-ack (:type (ex-data e)))
+         (do
+           (reconnect repl-env)
+           {:status :exception
+            :value  "Connection was reset by React Native"})
+         (throw e))))))
 
 (defn setup
   ([repl-env] (setup repl-env nil))
