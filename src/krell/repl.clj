@@ -164,7 +164,24 @@
        (bootstrap/install-repl-goog-require repl-env env))
      (rn-eval repl-env
        (str "goog.global.CLOSURE_UNCOMPILED_DEFINES = "
-         (json/write-str (:closure-defines opts)) ";")))))
+         (json/write-str (:closure-defines opts)) ";"))
+     ;; setup printing
+     (repl/evaluate-form repl-env env "<cljs repl>"
+       '((fn []
+           (fn redirect-output [out]
+             (set! *print-newline* true)
+             (set! *print-fn*
+               (fn [str]
+                 (->> (js-obj "type" "out" "value" str)
+                   (.stringify js/JSON)
+                   (.write out))
+                 (.write out "\0")))
+             (set! *print-err-fn*
+               (fn [str]
+                 (->> (js-obj "type" "err" "value" str)
+                   (.stringify js/JSON)
+                   (.write out))
+                 (.write out "0"))))))))))
 
 (defn connect [{:keys [options socket state] :as repl-env}]
   (let [start (util/now)

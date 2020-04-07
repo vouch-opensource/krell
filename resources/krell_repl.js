@@ -116,6 +116,12 @@ var server = TcpSocket.createServer(function (socket) {
                         var obj = JSON.parse(data);
                         req = obj.request;
                         ret = evaluate(obj.form);
+                        // output forwarding
+                        if(typeof ret == "function") {
+                            if(ret.name === "cljs$user$redirect_output") {
+                                ret(socket);
+                            }
+                        }
                     } catch (e) {
                         console.log(e, obj.form);
                         err = e;
