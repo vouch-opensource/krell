@@ -39,6 +39,14 @@ Native project:
 * [react-native-zeroconf](https://github.com/balthazar/react-native-zeroconf)
 * [react-native-device-info](https://github.com/react-native-community/react-native-device-info#getdeviceid)
 
+Ensure that you have the following permissions set in your `AndroidManifest.xml`:
+
+```
+<uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+<uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+<uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+```
+
 ## REPL
 
 ```
