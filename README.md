@@ -55,7 +55,7 @@ If you'd like to connect to Android you need to setup network forwarding with
 `adb`:
 
 ```
-adb forward tcp:5002 tcp:5002
+adb forward tcp:5003 tcp:5003
 ```
 
 ```
