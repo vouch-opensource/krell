@@ -60,8 +60,9 @@
                       ;; if there was client driven request then pass on this
                       ;; information back to the client
                       (when req {:request req}))))
+       ;; assume transfer won't be slower than 100K/s on a local network
        (let [ack (.poll results-queue
-                   ^long (:ack-timeout options) TimeUnit/MILLISECONDS)]
+                   (max 1 (quot (count js) (* 100 1024))) TimeUnit/SECONDS)]
          (if (or (nil? ack) (not= "ack" (:type ack)))
            (throw (ex-info "No ack" {:type :no-ack :queue-value ack}))
            (let [result (.take results-queue)
@@ -337,8 +338,7 @@
       ;; need to be careful with :ack-timeout
       ;; because of the payload size, might be
       ;; a better way
-      {:ack-timeout     10000
-       :connect-timeout 30000
+      {:connect-timeout 30000
        :eval-timeout    30000}
       options)
     (atom nil) (atom nil)))
