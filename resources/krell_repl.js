@@ -1,10 +1,11 @@
 import TcpSocket from "react-native-tcp-socket";
 import Zeroconf from "react-native-zeroconf";
-import { getApplicationName, getDeviceId } from 'react-native-device-info';
+import { getApplicationName, getDeviceId, getSystemName } from 'react-native-device-info';
 import {npmDeps} from "./rt.js";
 
 var evaluate = eval;
 var libLoadListeners = {};
+var isAndroid = (getSystemName() === "Android");
 
 // =============================================================================
 // ZeroConf Service Publication / Discovery
@@ -76,11 +77,68 @@ var onSourceLoad = function(path, cb) {
     libLoadListeners[path].push(cb);
 };
 
+var handleMessage = function(socket, data){
+    var req = null,
+        err = null,
+        ret = null;
+
+    data = data.replace(/\0/g, "");
+
+    if (data === ":cljs/quit") {
+        socket.destroy();
+        return;
+    } else {
+        try {
+            var obj = JSON.parse(data);
+            req = obj.request;
+            ret = evaluate(obj.form);
+            // output forwarding
+            if(typeof ret == "function") {
+                if(ret.name === "cljs$user$redirect_output") {
+                    ret(socket);
+                }
+            }
+        } catch (e) {
+            console.log(e, obj.form);
+            err = e;
+        }
+    }
+
+    if (err) {
+        socket.write(
+            JSON.stringify({
+                type: "result",
+                status: "exception",
+                value: (typeof cljs != "undefined") ? cljs.repl.error__GT_str(err) : err.toString()
+            })+"\0"
+        );
+    } else {
+        if (ret !== undefined && ret !== null) {
+            socket.write(
+                JSON.stringify({
+                    type: "result",
+                    status: "success",
+                    value: ret.toString(),
+                })+"\0"
+            );
+        } else {
+            socket.write(
+                JSON.stringify({
+                    type: "result",
+                    status: "success",
+                    value: null,
+                })+"\0"
+            );
+        }
+
+        if (req) {
+            notifyListeners(req);
+        }
+    }
+};
+
 var server = TcpSocket.createServer(function (socket) {
-    var buffer = '',
-        ret = null,
-        req = null,
-        err = null;
+    var buffer = "";
 
     // it doesn't matter which socket we use for loads
     loadFileSocket = socket;
@@ -88,8 +146,6 @@ var server = TcpSocket.createServer(function (socket) {
     socket.write("ready\0");
 
     socket.on("data", data => {
-        var header = "";
-
         if (data[data.length - 1] !== 0) {
             buffer += data;
         } else {
@@ -97,69 +153,16 @@ var server = TcpSocket.createServer(function (socket) {
             buffer = "";
 
             if (data) {
-                data = data.replace(/\0/g, "");
-
-                header = JSON.stringify({type: "ack"})+"\0";
-
-                if (data === ":cljs/quit") {
-                    socket.destroy();
-                    return;
-                } else {
-                    try {
-                        var obj = JSON.parse(data);
-                        req = obj.request;
-                        ret = evaluate(obj.form);
-                        // output forwarding
-                        if(typeof ret == "function") {
-                            if(ret.name === "cljs$user$redirect_output") {
-                                ret(socket);
-                            }
-                        }
-                    } catch (e) {
-                        console.log(e, obj.form);
-                        err = e;
-                    }
-                }
+                socket.write(JSON.stringify({type: "ack"}) + "\0", "utf8", function () {
+                    // on Android must serialize the write to avoid out of
+                    // order arrival, also callback never gets invoked on iOS
+                    // - bug in react-native-tcp-socket
+                    if(isAndroid) handleMessage(socket, data);
+                });
+                // No issues with multiple write in one turn of the event loop
+                // on iOS and avoids the bug mentioned in above comment
+                if(!isAndroid) handleMessage(socket, data);
             }
-
-            if (err) {
-                socket.write(
-                    header+
-                    JSON.stringify({
-                        type: "result",
-                        status: "exception",
-                        value: (typeof cljs != "undefined") ? cljs.repl.error__GT_str(err) : err.toString()
-                    })+"\0"
-                );
-            } else {
-                if (ret !== undefined && ret !== null) {
-                    socket.write(
-                        header+
-                        JSON.stringify({
-                            type: "result",
-                            status: "success",
-                            value: ret.toString(),
-                        })+"\0"
-                    );
-                } else {
-                    socket.write(
-                        header+
-                        JSON.stringify({
-                            type: "result",
-                            status: "success",
-                            value: null,
-                        })+"\0"
-                    );
-                }
-
-                if (req) {
-                    notifyListeners(req);
-                }
-            }
-
-            req = null;
-            ret = null;
-            err = null;
         }
     });
 
