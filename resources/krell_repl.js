@@ -144,8 +144,6 @@ var server = TcpSocket.createServer(function (socket) {
 
     socket.write("ready\0");
 
-    // TODO: I/O forwarding
-
     socket.on("data", data => {
         if (data[data.length - 1] !== 0) {
             buffer += data;
@@ -155,7 +153,7 @@ var server = TcpSocket.createServer(function (socket) {
 
             if (data) {
                 // write ack immediately to communicate we are still alive
-                socket.write(JSON.stringify({type: "ack"})+"\0", function () {
+                socket.write(JSON.stringify({type: "ack"})+"\0", "utf8", function () {
                     // handle message soon as ack is written
                     handleMessage(socket, data);
                 });
