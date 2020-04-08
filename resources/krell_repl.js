@@ -87,8 +87,6 @@ var server = TcpSocket.createServer(function (socket) {
 
     socket.write("ready\0");
 
-    // TODO: I/O forwarding
-
     socket.on("data", data => {
         var header = "";
 
