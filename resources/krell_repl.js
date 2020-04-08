@@ -1,10 +1,11 @@
 import TcpSocket from "react-native-tcp-socket";
 import Zeroconf from "react-native-zeroconf";
-import { getApplicationName, getDeviceId } from 'react-native-device-info';
+import { getApplicationName, getDeviceId, getSystemName } from 'react-native-device-info';
 import {npmDeps} from "./rt.js";
 
 var evaluate = eval;
 var libLoadListeners = {};
+var isAndroid = (getSystemName() === "Android");
 
 // =============================================================================
 // ZeroConf Service Publication / Discovery
@@ -152,11 +153,15 @@ var server = TcpSocket.createServer(function (socket) {
             buffer = "";
 
             if (data) {
-                // write ack immediately to communicate we are still alive
-                socket.write(JSON.stringify({type: "ack"})+"\0", "utf8", function () {
-                    // handle message soon as ack is written
-                    handleMessage(socket, data);
+                socket.write(JSON.stringify({type: "ack"}) + "\0", "utf8", function () {
+                    // on Android must serialize the write to avoid out of
+                    // order arrival, also callback never gets invoked on iOS
+                    // - bug in react-native-tcp-socket
+                    if(isAndroid) handleMessage(socket, data);
                 });
+                // No issues with multiple write in one turn of the event loop
+                // on iOS and avoids the bug mentioned in above comment
+                if(!isAndroid) handleMessage(socket, data);
             }
         }
     });
