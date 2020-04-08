@@ -76,11 +76,68 @@ var onSourceLoad = function(path, cb) {
     libLoadListeners[path].push(cb);
 };
 
+var handleMessage = function(socket, data){
+    var req = null,
+        err = null,
+        ret = null;
+
+    data = data.replace(/\0/g, "");
+
+    if (data === ":cljs/quit") {
+        socket.destroy();
+        return;
+    } else {
+        try {
+            var obj = JSON.parse(data);
+            req = obj.request;
+            ret = evaluate(obj.form);
+            // output forwarding
+            if(typeof ret == "function") {
+                if(ret.name === "cljs$user$redirect_output") {
+                    ret(socket);
+                }
+            }
+        } catch (e) {
+            console.log(e, obj.form);
+            err = e;
+        }
+    }
+
+    if (err) {
+        socket.write(
+            JSON.stringify({
+                type: "result",
+                status: "exception",
+                value: (typeof cljs != "undefined") ? cljs.repl.error__GT_str(err) : err.toString()
+            })+"\0"
+        );
+    } else {
+        if (ret !== undefined && ret !== null) {
+            socket.write(
+                JSON.stringify({
+                    type: "result",
+                    status: "success",
+                    value: ret.toString(),
+                })+"\0"
+            );
+        } else {
+            socket.write(
+                JSON.stringify({
+                    type: "result",
+                    status: "success",
+                    value: null,
+                })+"\0"
+            );
+        }
+
+        if (req) {
+            notifyListeners(req);
+        }
+    }
+};
+
 var server = TcpSocket.createServer(function (socket) {
-    var buffer = '',
-        ret = null,
-        req = null,
-        err = null;
+    var buffer = "";
 
     // it doesn't matter which socket we use for loads
     loadFileSocket = socket;
@@ -90,8 +147,6 @@ var server = TcpSocket.createServer(function (socket) {
     // TODO: I/O forwarding
 
     socket.on("data", data => {
-        var header = "";
-
         if (data[data.length - 1] !== 0) {
             buffer += data;
         } else {
@@ -99,69 +154,12 @@ var server = TcpSocket.createServer(function (socket) {
             buffer = "";
 
             if (data) {
-                data = data.replace(/\0/g, "");
-
-                header = JSON.stringify({type: "ack"})+"\0";
-
-                if (data === ":cljs/quit") {
-                    socket.destroy();
-                    return;
-                } else {
-                    try {
-                        var obj = JSON.parse(data);
-                        req = obj.request;
-                        ret = evaluate(obj.form);
-                        // output forwarding
-                        if(typeof ret == "function") {
-                            if(ret.name === "cljs$user$redirect_output") {
-                                ret(socket);
-                            }
-                        }
-                    } catch (e) {
-                        console.log(e, obj.form);
-                        err = e;
-                    }
-                }
+                // write ack immediately to communicate we are still alive
+                socket.write(JSON.stringify({type: "ack"})+"\0", function () {
+                    // handle message soon as ack is written
+                    handleMessage(socket, data);
+                });
             }
-
-            if (err) {
-                socket.write(
-                    header+
-                    JSON.stringify({
-                        type: "result",
-                        status: "exception",
-                        value: (typeof cljs != "undefined") ? cljs.repl.error__GT_str(err) : err.toString()
-                    })+"\0"
-                );
-            } else {
-                if (ret !== undefined && ret !== null) {
-                    socket.write(
-                        header+
-                        JSON.stringify({
-                            type: "result",
-                            status: "success",
-                            value: ret.toString(),
-                        })+"\0"
-                    );
-                } else {
-                    socket.write(
-                        header+
-                        JSON.stringify({
-                            type: "result",
-                            status: "success",
-                            value: null,
-                        })+"\0"
-                    );
-                }
-
-                if (req) {
-                    notifyListeners(req);
-                }
-            }
-
-            req = null;
-            ret = null;
-            err = null;
         }
     });
 
