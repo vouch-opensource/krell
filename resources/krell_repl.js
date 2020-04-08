@@ -3,9 +3,10 @@ import Zeroconf from "react-native-zeroconf";
 import { getApplicationName, getDeviceId, getSystemName } from 'react-native-device-info';
 import {npmDeps} from "./rt.js";
 
+var IS_ANDROID = (getSystemName() === "Android");
+var REPL_PORT = IS_ANDROID ? 5003 : 5002;
 var evaluate = eval;
 var libLoadListeners = {};
-var isAndroid = (getSystemName() === "Android");
 
 // =============================================================================
 // ZeroConf Service Publication / Discovery
@@ -30,7 +31,7 @@ zeroconf.on("resolved", service => {
 
 zeroconf.scan("http", "tcp", "local.");
 
-zeroconf.publishService("http", "tcp", "local.", bonjourName(), 5002);
+zeroconf.publishService("http", "tcp", "local.", bonjourName(), REPL_PORT);
 
 // =============================================================================
 // REPL Server
@@ -157,11 +158,11 @@ var server = TcpSocket.createServer(function (socket) {
                     // on Android must serialize the write to avoid out of
                     // order arrival, also callback never gets invoked on iOS
                     // - bug in react-native-tcp-socket
-                    if(isAndroid) handleMessage(socket, data);
+                    if(IS_ANDROID) handleMessage(socket, data);
                 });
                 // No issues with multiple write in one turn of the event loop
                 // on iOS and avoids the bug mentioned in above comment
-                if(!isAndroid) handleMessage(socket, data);
+                if(!IS_ANDROID) handleMessage(socket, data);
             }
         }
     });
@@ -173,7 +174,7 @@ var server = TcpSocket.createServer(function (socket) {
     socket.on("close", error => {
         console.log("Closed connection with ", socket.address());
     });
-}).listen({port: 5002, host: "0.0.0.0"});
+}).listen({port: REPL_PORT, host: "0.0.0.0"});
 
 server.on("error", error => {
     console.log("An error ocurred with the server", error);
