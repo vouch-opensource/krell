@@ -32,14 +32,13 @@ via `yarn` or `npm` just like any ClojureScript library.
 If you specify a higher optimization setting like `:simple` or `:advanced`,
 Krell generates a single file output without the REPL dependencies.
 
-## REPL Dependencies
+## Install REPL Dependencies
 
-If you intend to use the REPL you must install the following into your React
-Native project:
+Install the REPL support dependencies:
 
-* [react-native-tcp-socket](https://github.com/Rapsssito/react-native-tcp-socket)
-* [react-native-zeroconf](https://github.com/balthazar/react-native-zeroconf)
-* [react-native-device-info](https://github.com/react-native-community/react-native-device-info#getdeviceid)
+```
+clj -m cljs.main --install-deps
+```
 
 Ensure that you have the following permissions set in your `AndroidManifest.xml`:
 
