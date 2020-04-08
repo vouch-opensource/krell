@@ -57,6 +57,8 @@ If you'd like to connect to Android you need to setup network forwarding with
 adb forward tcp:5003 tcp:5003
 ```
 
+Starting a REPL:
+
 ```
 clj -m krell.main -co build.edn -r
 ```
