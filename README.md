@@ -67,7 +67,7 @@ clj -m krell.main -co build.edn -r
 
 ```
 
-clj -m krell.main -O simple -co build.edn -c
+clj -m krell.main -O advanced -co build.edn -c
 ```
 
 ## Examples
