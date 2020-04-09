@@ -335,10 +335,8 @@
 (defn repl-env* [options]
   (KrellEnv.
     (merge
-      ;; need to be careful with :ack-timeout
-      ;; because of the payload size, might be
-      ;; a better way
-      {:connect-timeout 30000
+      {:watch-dirs      ["src"]
+       :connect-timeout 30000
        :eval-timeout    30000}
       options)
     (atom nil) (atom nil)))
