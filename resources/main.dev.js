@@ -1,4 +1,4 @@
-import {onSourceLoad} from './krell_repl.js';
+import {onSourceLoad, onKrellReload} from './krell_repl.js';
 
 var main = '$KRELL_MAIN_NS';
 
@@ -53,10 +53,12 @@ function krellUpdateRoot(cb) {
         if(!exists(global, xs)) {
             var path = goog.debugLoader_.getPathFromDeps_(main);
             onSourceLoad(path, function() {
+                // TODO: pass reload fn here
                 cb(getMainFn(main)());
             });
             goog.require(main);
         } else {
+            // TODO: pass reload fn here
             cb(getMainFn(main)());
         }
     });

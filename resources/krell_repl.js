@@ -7,6 +7,7 @@ var IS_ANDROID = (getSystemName() === "Android");
 var REPL_PORT = IS_ANDROID ? 5003 : 5002;
 var evaluate = eval;
 var libLoadListeners = {};
+var reloadListeners = [];
 
 // =============================================================================
 // ZeroConf Service Publication / Discovery
@@ -76,6 +77,10 @@ var onSourceLoad = function(path, cb) {
         libLoadListeners[path] = [];
     }
     libLoadListeners[path].push(cb);
+};
+
+var onKrellReload = function(cb) {
+    reloadListeners.push(cb);
 };
 
 var handleMessage = function(socket, data){
@@ -185,5 +190,6 @@ server.on("close", () => {
 });
 
 module.exports = {
-    onSourceLoad: onSourceLoad
+    onSourceLoad: onSourceLoad,
+    onKrellReload: onKrellReload
 };
