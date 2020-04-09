@@ -32,6 +32,18 @@ via `yarn` or `npm` just like any ClojureScript library.
 If you specify a higher optimization setting like `:simple` or `:advanced`,
 Krell generates a single file output without the REPL dependencies.
 
+## Requirements
+
+* Latest release of ClojureScript
+* Java SDK 8+
+
+Using React Native >= 0.60 is highly recommended as autolinking simplifies usage
+greatly. If you must use an older version of React Native refer to the
+documentation for the REPL support dependencies:
+[react-native-tcp-socket](https://www.npmjs.com/package/react-native-tcp-socket),
+[react-native-device-info](https://github.com/react-native-community/react-native-device-info),
+[react-native-zeroconf](https://github.com/balthazar/react-native-zeroconf).
+
 ## Install REPL Dependencies
 
 Install the REPL support dependencies:
