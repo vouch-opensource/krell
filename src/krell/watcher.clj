@@ -1,5 +1,4 @@
 (ns krell.watcher
-  (:require [clojure.java.io :as io])
   (:import [io.methvin.watcher DirectoryChangeEvent DirectoryChangeEvent$EventType
                                DirectoryChangeListener DirectoryWatcher]
            [java.nio.file Paths]
