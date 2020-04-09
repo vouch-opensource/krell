@@ -1,8 +1,11 @@
 (ns krell.watcher
   (:require [clojure.java.io :as io])
-  (:import [java.nio.file Paths]
-           [io.methvin.watcher DirectoryChangeEvent DirectoryChangeListener
-                               DirectoryWatcher]))
+  (:import [io.methvin.watcher DirectoryChangeEvent DirectoryChangeListener
+                               DirectoryWatcher]
+           [java.nio.file Paths]
+           [org.slf4j LoggerFactory]))
+
+(def logger (LoggerFactory/getLogger "krell"))
 
 (defn f->l [f]
   (reify
@@ -11,10 +14,11 @@
       (f e))))
 
 (defn listener* [^DirectoryChangeEvent e]
+  (. logger (info (str "EVENT " (. e eventType))))
   (case (. e eventType)
-    DirectoryChangeEvent/CREATE (println "CREATE")
-    DirectoryChangeEvent/MODIFY (println "MODIFY")
-    DirectoryChangeEvent/DELETE (println "DELETE")))
+    DirectoryChangeEvent/CREATE (. logger (info "CREATE"))
+    DirectoryChangeEvent/MODIFY (. logger (info "MODIFY"))
+    DirectoryChangeEvent/DELETE (. logger (info "DELETE"))))
 
 (def listener (f->l listener*))
 
@@ -37,6 +41,6 @@
 
   (def watcher (create "src"))
 
-  (.watchAsync watcher)
+  (watch watcher)
 
   )
