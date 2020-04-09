@@ -6,3 +6,4 @@
 *.iml
 .krell_repl
 .cpcache
+target/*
