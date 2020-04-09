@@ -74,3 +74,28 @@ clj -m krell.main -O advanced -co build.edn -c
 ### Plain React Native
 
 ### Reagent
+
+## Contributing
+
+Currently Krell is only taking bug reports. If you find a bug or would like
+to see an enhancement that aligns with the following design principles 
+please file a Github issue!
+
+#### Design Principles
+
+* No ClojureScript React library integration templating, the documentation 
+  should make it pretty clear how to integrate with any particular ClojureScript 
+  React library.
+
+* Basic React Native only, we're not interested in Expo or any other similar
+  tooling
+
+## License ##
+
+    Copyright (c) Vouch, Inc. All rights reserved. The use and
+    distribution terms for this software are covered by the Eclipse
+    Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
+    which can be found in the file epl-v10.html at the root of this
+    distribution. By using this software in any fashion, you are
+    agreeing to be bound by the terms of this license. You must
+    not remove this notice, or any other, from this software.
