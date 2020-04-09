@@ -83,9 +83,8 @@ clj -m krell.main -O advanced -co build.edn -c
 
 ## Examples
 
-### Plain React Native
-
-### Reagent
+See the [Reagent example tutorial](https://github.com/vouchio/krell/wiki/Reagent-Tutorial) 
+in the wiki.
 
 ## Contributing
 
