@@ -94,7 +94,7 @@ please file a Github issue!
 
 #### Design Principles
 
-* No ClojureScript React library integration templating, the documentation 
+* No ClojureScript React library integration templating. The documentation 
   should make it pretty clear how to integrate with any particular ClojureScript 
   React library.
 
