@@ -1,7 +1,6 @@
 (ns krell.watcher
   (:require [clojure.java.io :as io])
-  (:import [java.io IOException]
-           [java.nio.file Paths]
+  (:import [java.nio.file Paths]
            [io.methvin.watcher DirectoryChangeEvent DirectoryChangeListener
                                DirectoryWatcher]))
 
@@ -22,12 +21,22 @@
 (defn to-path [& args]
   (Paths/get (first args) (into-array String (rest args))))
 
+(defn create [& paths]
+  (-> (DirectoryWatcher/builder)
+    (.paths (map to-path paths))
+    (.listener listener)
+    (.build)))
+
+(defn watch [^DirectoryWatcher watcher]
+  (.watchAsync watcher))
+
+(defn stop [^DirectoryWatcher watcher]
+  (.close watcher))
+
 (comment
 
-  (-> (DirectoryWatcher/builder)
-    (.path (to-path "src"))
-    (.listener listener)
-    (.build))
+  (def watcher (create "src"))
 
+  (.watchAsync watcher)
 
   )
