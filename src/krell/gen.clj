@@ -22,9 +22,10 @@
 
 (defn node-modules
   "Caching logic for npm-requires."
-  [opts]
+  [{:keys [deps-cmd] :or {deps-cmd "npm"} :as opts}]
   (let [pkg-cache (io/file ".krellcache" "node_modules.edn")
-        pkg-lock  (io/file "package-lock.json")]
+        pkg-lock  (io/file ({"npm"  "package-lock.json"
+                             "yarn" "yarn.lock"} deps-cmd))]
     (if (or (not (.exists pkg-cache))
             (< (util/last-modified pkg-cache) (util/last-modified pkg-lock)))
       (let [modules (api/node-modules opts)]
