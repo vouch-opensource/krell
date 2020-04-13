@@ -6,61 +6,6 @@
             [clojure.set :as set]
             [clojure.string :as string]))
 
-(defn export-lib [lib]
-  (str "\""lib "\": require('" lib "')" ))
-
-(defn rt-js
-  "Returns the JavaScript code to support runtime require of React Native
-  modules."
-  [lib-set]
-  (str
-    "module.exports = {\n"
-    "  npmDeps: {\n"
-    (string/join ",\n" (map (comp #(str "    " %) export-lib) lib-set))
-    "  }\n"
-    "};\n"))
-
-(defn node-modules
-  "Caching logic for npm-requires."
-  [{:keys [deps-cmd] :or {deps-cmd "npm"} :as opts}]
-  (let [pkg-cache (io/file ".krellcache" "node_modules.edn")
-        pkg-lock  (io/file ({"npm"  "package-lock.json"
-                             "yarn" "yarn.lock"} deps-cmd))]
-    (if (or (not (.exists pkg-cache))
-            (< (util/last-modified pkg-cache) (util/last-modified pkg-lock)))
-      (let [modules (api/node-modules opts)]
-        (util/mkdirs pkg-cache)
-        (spit pkg-cache (pr-str modules))
-        modules)
-      (edn/read-string (slurp pkg-cache)))))
-
-(defn npm-requires
-  "Return the set of ClojureScript requires that are node_modules libraries."
-  [opts]
-  (let [cljs-libs (-> (:main opts)
-                    api/compilable->ijs
-                    api/add-dependency-sources)
-        npm-libs  (api/index-ijs (node-modules opts))]
-    (set/intersection
-      ;; node lib names will be strings
-      (into #{} (mapcat #(map str %)) (map :requires cljs-libs))
-      (into #{} (keys npm-libs)))))
-
-(defn changed? [source out-file]
-  (not= source (slurp out-file)))
-
-(defn write-rt-js
-  "Write the runtime module support file. This generated file allows REPLs
-   to require node_module libraries at runtime."
-  [opts]
-  (let [npm-deps (npm-requires opts)
-        source   (rt-js npm-deps)
-        out-file (io/file (:output-dir opts) "rt.js")]
-    (when (or (not (.exists out-file))
-              (changed? source out-file))
-      (util/mkdirs out-file)
-      (spit out-file source))))
-
 (defn write-index-js
   "Write the Krell index.js file which bootstraps the Krell application.
   See resources/index.js"
