@@ -1,8 +1,9 @@
 (ns krell.repl
   (:require [cljs.analyzer.api :as ana-api]
+            [cljs.build.api :as build-api]
             [cljs.cli :as cli]
             [cljs.closure :as closure]
-            [cljs.compiler :as comp]
+            [cljs.compiler.api :as comp-api]
             [cljs.repl :as repl]
             [cljs.repl.bootstrap :as bootstrap]
             [cljs.util :as cljs-util]
@@ -97,7 +98,7 @@
   "Load a Closure JavaScript file into the React Native REPL"
   [repl-env provides url]
   (rn-eval repl-env
-    (str "goog.require('" (comp/munge (first provides)) "')")))
+    (str "goog.require('" (comp-api/munge (first provides)) "')")))
 
 (defn event-loop [{:keys [state socket] :as repl-env}]
   (while (not (:done @state))
@@ -230,9 +231,14 @@
 
 (defn maybe-recompile [{:keys [type path] :as evt}]
   (when (= :modify type)
-    (let [cljs (util/to-file path)
+    (let [opts (:options (ana-api/current-state))
+          cljs (util/to-file path)
           ns-info (ana-api/parse-ns cljs)]
-      )))
+      ;; TODO: catch exceptions, communicate them
+      ;; TODO: catch warnings, communicate them
+      (comp-api/compile-file (:source-file ns-info)
+        (build-api/target-file-for-cljs-ns
+          (:ns ns-info) (:output-dir opts))))))
 
 (defn setup
   ([repl-env] (setup repl-env nil))
@@ -248,7 +254,10 @@
        (.start (Thread. (bound-fn [] (event-loop repl-env))))
        ;; create and start the watcher
        (swap! state assoc :watcher
-         (doto (apply watcher/create maybe-recompile (:watch-dirs options))
+         (doto
+           (apply watcher/create
+             (bound-fn [e] (maybe-recompile e))
+             (:watch-dirs options))
            (watcher/watch)))
        ;; compile cljs.core & its dependencies, goog/base.js must be available
        ;; for bootstrap to load, use new closure/compile as it can handle
