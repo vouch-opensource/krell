@@ -263,7 +263,6 @@
 
 (defn krell-compile
   [repl-env {:keys [options] :as cfg}]
-  (gen/write-rt-js options)
   (gen/write-index-js options)
   (gen/write-repl-js options)
   (let [opt-level (:optimizations options)]
@@ -280,9 +279,7 @@
      :output-dir    ".krell_repl"
 
      ;; RN target defaults
-     :nodejs-rt     false
-     :npm-deps      true
-     :target        :nodejs
+     :target        :bundle
      :target-fn     'krell.gen/krell-main-js
 
      ;; cljs.cli extension points
