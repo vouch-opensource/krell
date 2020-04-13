@@ -1,5 +1,6 @@
 (ns krell.gen
-  (:require [clojure.java.io :as io]
+  (:require [cljs.util :as util]
+            [clojure.java.io :as io]
             [clojure.string :as string]))
 
 (defn write-index-js
@@ -19,12 +20,13 @@
 (defn write-repl-js
   "Write out the REPL support code. See resources/krell_repl.js"
   [opts]
-  (let [source (slurp (io/resource "krell_repl.js"))]
-    (spit (io/file (:output-dir opts) "krell_repl.js")
-      source)))
+  (let [source   (slurp (io/resource "krell_repl.js"))
+        out-file (io/file (:output-dir opts) "krell_repl.js")]
+    (util/mkdirs out-file)
+    (spit out-file source)))
 
 (defn krell-main-js
-  "Write out the build dependent entry point. See resources/main.dev.js
+  "Return the source for build dependent entry point. See resources/main.dev.js
   and resources/main.prod.js"
   [opts]
   (let [source (slurp
