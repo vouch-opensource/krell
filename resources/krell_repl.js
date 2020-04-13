@@ -1,7 +1,7 @@
 import TcpSocket from "react-native-tcp-socket";
 import Zeroconf from "react-native-zeroconf";
 import { getApplicationName, getDeviceId, getSystemName } from 'react-native-device-info';
-import {npmDeps} from "./rt.js";
+import {npmDeps} from "./npm_deps.js";
 
 var IS_ANDROID = (getSystemName() === "Android");
 var REPL_PORT = IS_ANDROID ? 5003 : 5002;
