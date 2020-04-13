@@ -52,6 +52,8 @@ Install the REPL support dependencies:
 clj -m cljs.main --install-deps
 ```
 
+Switch into the `ios` directory of your project and run `pod install`.
+
 Ensure that you have the following permissions set in your `AndroidManifest.xml`:
 
 ```
