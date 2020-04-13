@@ -1,5 +1,5 @@
 {:paths ["src" "resources"]
- :deps {org.clojure/clojurescript {:mvn/version "1.10.678"}
+ :deps {org.clojure/clojurescript {:local/root "../../clojure/clojurescript"} #_{:mvn/version "1.10.698"}
         com.github.rickyclarkson/jmdns {:mvn/version "3.4.2-r353-1"}
         io.methvin/directory-watcher {:mvn/version "0.9.9"}}
  :aliases {:repl {:extra-deps {org.slf4j/slf4j-simple {:mvn/version "1.7.30"}}}}}
