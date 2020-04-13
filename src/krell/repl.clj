@@ -1,5 +1,5 @@
 (ns krell.repl
-  (:require [cljs.analyzer :as ana]
+  (:require [cljs.analyzer.api :as ana-api]
             [cljs.cli :as cli]
             [cljs.closure :as closure]
             [cljs.compiler :as comp]
@@ -10,7 +10,8 @@
             [clojure.java.io :as io]
             [krell.gen :as gen]
             [krell.mdns :as mdns]
-            [krell.util :as util])
+            [krell.util :as util]
+            [krell.watcher :as watcher])
   (:import [clojure.lang ExceptionInfo]
            [java.io BufferedReader BufferedWriter File IOException]
            [java.net Socket]
@@ -136,7 +137,7 @@
    (init-js-env repl-env repl/*repl-opts*))
   ([repl-env opts]
    (let [output-dir (io/file (cljs-util/output-directory opts))
-         env        (ana/empty-env)
+         env        (ana-api/empty-env)
          cljs-deps  (io/file output-dir "cljs_deps.js")
          repl-deps  (io/file output-dir "krell_repl_deps.js")
          base-path  (.getPath (io/file (:output-dir opts) "goog"))]
@@ -227,11 +228,17 @@
             :value  "Connection was reset by React Native"})
          (throw e))))))
 
+(defn maybe-recompile [{:keys [type path] :as evt}]
+  (when (= :modify type)
+    (let [cljs (util/to-file path)
+          ns-info (ana-api/parse-ns cljs)]
+      )))
+
 (defn setup
   ([repl-env] (setup repl-env nil))
-  ([{:keys [state socket] :as repl-env} opts]
+  ([{:keys [options state socket] :as repl-env} opts]
    (let [[bonjour-name {:keys [host port] :as ep}]
-         (mdns/discover (boolean (:choose-first (:options repl-env))))
+         (mdns/discover (boolean (:choose-first options)))
          host (mdns/local-address-if host)]
      (swap! state merge {:host host :port port})
      (println
@@ -239,6 +246,10 @@
      (when-not @socket
        (connect repl-env)
        (.start (Thread. (bound-fn [] (event-loop repl-env))))
+       ;; create and start the watcher
+       (swap! state assoc :watcher
+         (doto (apply watcher/create maybe-recompile (:watch-dirs options))
+           (watcher/watch)))
        ;; compile cljs.core & its dependencies, goog/base.js must be available
        ;; for bootstrap to load, use new closure/compile as it can handle
        ;; resources in JARs
@@ -324,6 +335,8 @@
   (-tear-down [this]
     (let [sock @socket]
       (swap! state assoc :done true)
+      (when-let [w (:watcher @state)]
+        (watcher/stop w))
       (when (and (:socket sock)
                  (not (.isClosed (:socket sock))))
         (write (:out sock) ":cljs/quit")
