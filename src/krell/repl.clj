@@ -234,11 +234,14 @@
     (let [opts (:options @(ana-api/current-state))
           cljs (util/to-file path)
           ns-info (ana-api/parse-ns cljs)]
-      ;; TODO: catch exceptions, communicate them
       ;; TODO: catch warnings, communicate them
-      (comp-api/compile-file (:source-file ns-info)
-        (build-api/target-file-for-cljs-ns
-          (:ns ns-info) (:output-dir opts)) opts))))
+      (try
+        (comp-api/compile-file (:source-file ns-info)
+          (build-api/target-file-for-cljs-ns
+            (:ns ns-info) (:output-dir opts)) opts)
+        (catch Throwable t
+          ;; TODO: catch exceptions, communicate them
+          (println t))))))
 
 (defn setup
   ([repl-env] (setup repl-env nil))
