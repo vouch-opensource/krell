@@ -1,9 +1,5 @@
 (ns krell.gen
-  (:require [cljs.build.api :as api]
-            [cljs.util :as util]
-            [clojure.edn :as edn]
-            [clojure.java.io :as io]
-            [clojure.set :as set]
+  (:require [clojure.java.io :as io]
             [clojure.string :as string]))
 
 (defn write-index-js
