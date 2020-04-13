@@ -231,14 +231,14 @@
 
 (defn maybe-recompile [{:keys [type path] :as evt}]
   (when (= :modify type)
-    (let [opts (:options (ana-api/current-state))
+    (let [opts (:options @(ana-api/current-state))
           cljs (util/to-file path)
           ns-info (ana-api/parse-ns cljs)]
       ;; TODO: catch exceptions, communicate them
       ;; TODO: catch warnings, communicate them
       (comp-api/compile-file (:source-file ns-info)
         (build-api/target-file-for-cljs-ns
-          (:ns ns-info) (:output-dir opts))))))
+          (:ns ns-info) (:output-dir opts)) opts))))
 
 (defn setup
   ([repl-env] (setup repl-env nil))
