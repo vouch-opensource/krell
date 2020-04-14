@@ -8,6 +8,7 @@
             [cljs.repl.bootstrap :as bootstrap]
             [clojure.data.json :as json]
             [clojure.java.io :as io]
+            [clojure.string :as string]
             [krell.gen :as gen]
             [krell.mdns :as mdns]
             [krell.util :as util]
@@ -238,6 +239,15 @@
       (and (= :create type)
            (not (.isDirectory (util/to-file path))))))
 
+(defn collecting-warning-handler [state]
+  (fn [warn-type env info]
+    (let [msg (str (ana-api/warning-message warn-type info)
+                (when-let [line (:line env)] (str " at line " line)))]
+      (swap! state conj msg))))
+
+(defn warn-client [repl-env s]
+  (rn-eval repl-env (str "console.warn(" (pr-str s) ")")))
+
 (defn recompile
   "Recompile the ClojureScript file specified by :path key in the first
   parameter. This is called by the watcher off the main thread."
@@ -247,8 +257,9 @@
           src     (util/to-file path)
           ns-info (ana-api/parse-ns src)
           dest    (build-api/target-file-for-cljs-ns
-                    (:ns ns-info) (:output-dir opts))]
-      ;; TODO: catch warnings, communicate them
+                    (:ns ns-info) (:output-dir opts))
+          warns   (atom [])
+          handler (collecting-warning-handler warns)]
       (try
         ;; we need to compute js deps so that requires from node_modules
         ;; won't fail
@@ -256,17 +267,27 @@
           (build-api/dependency-order
             (build-api/add-dependency-sources [ns-info] opts))
           opts)
-        (comp-api/compile-file state
-          (:source-file ns-info)
-          (build-api/target-file-for-cljs-ns
-            (:ns ns-info) (:output-dir opts)) opts)
-        (rn-eval repl-env (slurp dest)
-          {:type "load-file"
-           :reload true
-           :value (.getPath src)})
+        (ana-api/with-warning-handlers [handler]
+          (comp-api/compile-file state
+            (:source-file ns-info)
+            (build-api/target-file-for-cljs-ns
+              (:ns ns-info) (:output-dir opts)) opts))
+        (if (empty? @warns)
+          (rn-eval repl-env (slurp dest)
+            {:type   "load-file"
+             :reload true
+             :value  (.getPath src)})
+          ;; TODO: it may be that warns strings have chars that will break
+          ;; console.warn ?
+          (let [pre (str "Could not reload " (:ns ns-info) ":")]
+            (warn-client repl-env
+              (string/join "\n" (concat [pre] @warns)))))
         (catch Throwable t
-          ;; TODO: communicate exceptions
-          (println t))))))
+          (println t)
+          (warn-client repl-env
+            (str (:ns ns-info)
+              " compilation failed with exception: "
+              (.getMessage t))))))))
 
 (defn setup
   ([repl-env] (setup repl-env nil))
