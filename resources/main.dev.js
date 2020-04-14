@@ -65,5 +65,6 @@ function krellUpdateRoot(cb) {
 }
 
 module.exports = {
-    krellUpdateRoot: krellUpdateRoot
+    krellUpdateRoot: krellUpdateRoot,
+    onKrellReload: onKrellReload
 };
