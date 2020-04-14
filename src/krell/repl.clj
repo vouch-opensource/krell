@@ -54,14 +54,17 @@
   "Evaluate a JavaScript string in the React Native REPL"
   ([repl-env js]
    (rn-eval* repl-env js nil))
-  ([{:keys [options] :as repl-env} js req]
+  ([{:keys [options] :as repl-env} js client-req]
    (locking eval-lock
+     (when (and (= "load-file" (:type client-req))
+                (:verbose (ana-api/get-options)))
+       (println "Load file:" (:value client-req)))
      (let [{:keys [out]} @(:socket repl-env)]
        (write out (json/write-str
                     (merge {:type "eval" :form js}
                       ;; if there was client driven request then pass on this
                       ;; information back to the client
-                      (when req {:request req}))))
+                      (when client-req {:request client-req}))))
        ;; assume transfer won't be slower than 100K/s on a local network
        (let [ack (.poll results-queue
                    (max 1 (quot (count js) (* 100 1024))) TimeUnit/SECONDS)]
@@ -90,8 +93,8 @@
 (defn load-queued-files [repl-env]
   (loop [{:keys [value] :as load-file-req} (.poll load-queue)]
     (when load-file-req
-      (rn-eval repl-env
-        (slurp (io/file value)) load-file-req)
+      (let [f (io/file value)]
+       (rn-eval repl-env (slurp f) load-file-req))
       (recur (.poll load-queue)))))
 
 (defn load-javascript
@@ -100,7 +103,9 @@
   (rn-eval repl-env
     (str "goog.require('" (comp-api/munge (first provides)) "')")))
 
-(defn event-loop [{:keys [state socket] :as repl-env}]
+(defn event-loop
+  "Event loop that listens for responses from the client."
+  [{:keys [state socket] :as repl-env}]
   (while (not (:done @state))
     (try
       (let [res (read-response (:in @socket))]
@@ -229,11 +234,14 @@
             :value  "Connection was reset by React Native"})
          (throw e))))))
 
-(defn maybe-recompile [{:keys [type path] :as evt} opts]
+(defn recompile
+  "Recompile the ClojureScript file specified by :path key in the first
+  parameter. This is called by the watcher off the main thread."
+  [{:keys [type path] :as evt} opts]
   (when (= :modify type)
     (let [state   (ana-api/current-state)
-          cljs    (util/to-file path)
-          ns-info (ana-api/parse-ns cljs)]
+          f       (util/to-file path)
+          ns-info (ana-api/parse-ns f)]
       ;; TODO: catch warnings, communicate them
       (try
         ;; we need to compute js deps so that requires from node_modules
@@ -268,7 +276,7 @@
            (apply watcher/create
              ;; have to pass the processed opts
              ;; the compiler one are the original ones
-             (bound-fn [e] (maybe-recompile e opts))
+             (bound-fn [e] (recompile e opts))
              (:watch-dirs options))
            (watcher/watch)))
        ;; compile cljs.core & its dependencies, goog/base.js must be available
