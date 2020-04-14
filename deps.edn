@@ -1,6 +1,6 @@
 {:paths ["src" "resources"]
- :deps {org.clojure/clojurescript {:local/root "../../clojure/clojurescript"} #_{:git/url "https://github.com/clojure/clojurescript.git"
-                                   :sha "2248bafbb18bfd42e24f9dab4fbba07e3c871935"}
+ :deps {org.clojure/clojurescript {:git/url "https://github.com/clojure/clojurescript.git"
+                                   :sha "1c2094cfa775746448260c76f332ceaa5c4cedaa"}
         com.github.rickyclarkson/jmdns {:mvn/version "3.4.2-r353-1"}
         io.methvin/directory-watcher {:mvn/version "0.9.9"}}
  :aliases {:repl {:extra-deps {org.slf4j/slf4j-simple {:mvn/version "1.7.30"}}}}}
