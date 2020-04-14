@@ -237,11 +237,13 @@
 (defn recompile
   "Recompile the ClojureScript file specified by :path key in the first
   parameter. This is called by the watcher off the main thread."
-  [{:keys [type path] :as evt} opts]
+  [repl-env {:keys [type path] :as evt} opts]
   (when (= :modify type)
     (let [state   (ana-api/current-state)
-          f       (util/to-file path)
-          ns-info (ana-api/parse-ns f)]
+          src     (util/to-file path)
+          ns-info (ana-api/parse-ns src)
+          dest    (build-api/target-file-for-cljs-ns
+                    (:ns ns-info) (:output-dir opts))]
       ;; TODO: catch warnings, communicate them
       (try
         ;; we need to compute js deps so that requires from node_modules
@@ -254,6 +256,10 @@
           (:source-file ns-info)
           (build-api/target-file-for-cljs-ns
             (:ns ns-info) (:output-dir opts)) opts)
+        (rn-eval repl-env (slurp dest)
+          {:type "load-file"
+           :reload true
+           :value (.getPath src)})
         (catch Throwable t
           ;; TODO: communicate exceptions
           (println t))))))
@@ -276,7 +282,7 @@
            (apply watcher/create
              ;; have to pass the processed opts
              ;; the compiler one are the original ones
-             (bound-fn [e] (recompile e opts))
+             (bound-fn [e] (recompile repl-env e opts))
              (:watch-dirs options))
            (watcher/watch)))
        ;; compile cljs.core & its dependencies, goog/base.js must be available
