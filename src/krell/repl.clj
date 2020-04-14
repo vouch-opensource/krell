@@ -236,6 +236,8 @@
           ns-info (ana-api/parse-ns cljs)]
       ;; TODO: catch warnings, communicate them
       (try
+        ;; we need to compute js deps so that requires from node_modules
+        ;; won't fail
         (build-api/handle-js-modules state
           (build-api/dependency-order
             (build-api/add-dependency-sources [ns-info] opts))
