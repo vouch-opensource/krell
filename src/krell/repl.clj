@@ -229,18 +229,23 @@
             :value  "Connection was reset by React Native"})
          (throw e))))))
 
-(defn maybe-recompile [{:keys [type path] :as evt}]
+(defn maybe-recompile [{:keys [type path] :as evt} opts]
   (when (= :modify type)
-    (let [opts (:options @(ana-api/current-state))
-          cljs (util/to-file path)
+    (let [state   (ana-api/current-state)
+          cljs    (util/to-file path)
           ns-info (ana-api/parse-ns cljs)]
       ;; TODO: catch warnings, communicate them
       (try
-        (comp-api/compile-file (:source-file ns-info)
+        (build-api/handle-js-modules state
+          (build-api/dependency-order
+            (build-api/add-dependency-sources [ns-info] opts))
+          opts)
+        (comp-api/compile-file state
+          (:source-file ns-info)
           (build-api/target-file-for-cljs-ns
             (:ns ns-info) (:output-dir opts)) opts)
         (catch Throwable t
-          ;; TODO: catch exceptions, communicate them
+          ;; TODO: communicate exceptions
           (println t))))))
 
 (defn setup
@@ -259,7 +264,9 @@
        (swap! state assoc :watcher
          (doto
            (apply watcher/create
-             (bound-fn [e] (maybe-recompile e))
+             ;; have to pass the processed opts
+             ;; the compiler one are the original ones
+             (bound-fn [e] (maybe-recompile e opts))
              (:watch-dirs options))
            (watcher/watch)))
        ;; compile cljs.core & its dependencies, goog/base.js must be available
