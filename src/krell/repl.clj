@@ -234,11 +234,16 @@
             :value  "Connection was reset by React Native"})
          (throw e))))))
 
+(defn modified-source? [{:keys [type path]}]
+  (or (= :modify type)
+      (and (= :create type)
+           (not (.isDirectory (util/to-file path))))))
+
 (defn recompile
   "Recompile the ClojureScript file specified by :path key in the first
   parameter. This is called by the watcher off the main thread."
-  [repl-env {:keys [type path] :as evt} opts]
-  (when (= :modify type)
+  [repl-env {:keys [path] :as evt} opts]
+  (when (modified-source? evt)
     (let [state   (ana-api/current-state)
           src     (util/to-file path)
           ns-info (ana-api/parse-ns src)
