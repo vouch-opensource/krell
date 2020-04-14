@@ -6,7 +6,6 @@
             [cljs.compiler.api :as comp-api]
             [cljs.repl :as repl]
             [cljs.repl.bootstrap :as bootstrap]
-            [cljs.util :as cljs-util]
             [clojure.data.json :as json]
             [clojure.java.io :as io]
             [krell.gen :as gen]
@@ -142,7 +141,7 @@
   ([repl-env]
    (init-js-env repl-env repl/*repl-opts*))
   ([repl-env opts]
-   (let [output-dir (io/file (cljs-util/output-directory opts))
+   (let [output-dir (io/file (:output-dir opts))
          env        (ana-api/empty-env)
          cljs-deps  (io/file output-dir "cljs_deps.js")
          repl-deps  (io/file output-dir "krell_repl_deps.js")
@@ -293,7 +292,7 @@
        ;; compile cljs.core & its dependencies, goog/base.js must be available
        ;; for bootstrap to load, use new closure/compile as it can handle
        ;; resources in JARs
-       (let [output-dir (io/file (cljs-util/output-directory opts))
+       (let [output-dir (io/file (:output-dir opts))
              core       (io/resource "cljs/core.cljs")
              core-js    (closure/compile core
                           (assoc opts :output-file
