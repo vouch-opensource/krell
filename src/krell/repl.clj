@@ -1,8 +1,9 @@
 (ns krell.repl
-  (:require [cljs.analyzer :as ana]
+  (:require [cljs.analyzer.api :as ana-api]
+            [cljs.build.api :as build-api]
             [cljs.cli :as cli]
             [cljs.closure :as closure]
-            [cljs.compiler :as comp]
+            [cljs.compiler.api :as comp-api]
             [cljs.repl :as repl]
             [cljs.repl.bootstrap :as bootstrap]
             [cljs.util :as cljs-util]
@@ -10,7 +11,8 @@
             [clojure.java.io :as io]
             [krell.gen :as gen]
             [krell.mdns :as mdns]
-            [krell.util :as util])
+            [krell.util :as util]
+            [krell.watcher :as watcher])
   (:import [clojure.lang ExceptionInfo]
            [java.io BufferedReader BufferedWriter File IOException]
            [java.net Socket]
@@ -52,14 +54,17 @@
   "Evaluate a JavaScript string in the React Native REPL"
   ([repl-env js]
    (rn-eval* repl-env js nil))
-  ([{:keys [options] :as repl-env} js req]
+  ([{:keys [options] :as repl-env} js client-req]
    (locking eval-lock
+     (when (and (= "load-file" (:type client-req))
+                (:verbose (ana-api/get-options)))
+       (println "Load file:" (:value client-req)))
      (let [{:keys [out]} @(:socket repl-env)]
        (write out (json/write-str
                     (merge {:type "eval" :form js}
                       ;; if there was client driven request then pass on this
                       ;; information back to the client
-                      (when req {:request req}))))
+                      (when client-req {:request client-req}))))
        ;; assume transfer won't be slower than 100K/s on a local network
        (let [ack (.poll results-queue
                    (max 1 (quot (count js) (* 100 1024))) TimeUnit/SECONDS)]
@@ -88,17 +93,19 @@
 (defn load-queued-files [repl-env]
   (loop [{:keys [value] :as load-file-req} (.poll load-queue)]
     (when load-file-req
-      (rn-eval repl-env
-        (slurp (io/file value)) load-file-req)
+      (let [f (io/file value)]
+       (rn-eval repl-env (slurp f) load-file-req))
       (recur (.poll load-queue)))))
 
 (defn load-javascript
   "Load a Closure JavaScript file into the React Native REPL"
   [repl-env provides url]
   (rn-eval repl-env
-    (str "goog.require('" (comp/munge (first provides)) "')")))
+    (str "goog.require('" (comp-api/munge (first provides)) "')")))
 
-(defn event-loop [{:keys [state socket] :as repl-env}]
+(defn event-loop
+  "Event loop that listens for responses from the client."
+  [{:keys [state socket] :as repl-env}]
   (while (not (:done @state))
     (try
       (let [res (read-response (:in @socket))]
@@ -136,7 +143,7 @@
    (init-js-env repl-env repl/*repl-opts*))
   ([repl-env opts]
    (let [output-dir (io/file (cljs-util/output-directory opts))
-         env        (ana/empty-env)
+         env        (ana-api/empty-env)
          cljs-deps  (io/file output-dir "cljs_deps.js")
          repl-deps  (io/file output-dir "krell_repl_deps.js")
          base-path  (.getPath (io/file (:output-dir opts) "goog"))]
@@ -227,11 +234,41 @@
             :value  "Connection was reset by React Native"})
          (throw e))))))
 
+(defn recompile
+  "Recompile the ClojureScript file specified by :path key in the first
+  parameter. This is called by the watcher off the main thread."
+  [repl-env {:keys [type path] :as evt} opts]
+  (when (= :modify type)
+    (let [state   (ana-api/current-state)
+          src     (util/to-file path)
+          ns-info (ana-api/parse-ns src)
+          dest    (build-api/target-file-for-cljs-ns
+                    (:ns ns-info) (:output-dir opts))]
+      ;; TODO: catch warnings, communicate them
+      (try
+        ;; we need to compute js deps so that requires from node_modules
+        ;; won't fail
+        (build-api/handle-js-modules state
+          (build-api/dependency-order
+            (build-api/add-dependency-sources [ns-info] opts))
+          opts)
+        (comp-api/compile-file state
+          (:source-file ns-info)
+          (build-api/target-file-for-cljs-ns
+            (:ns ns-info) (:output-dir opts)) opts)
+        (rn-eval repl-env (slurp dest)
+          {:type "load-file"
+           :reload true
+           :value (.getPath src)})
+        (catch Throwable t
+          ;; TODO: communicate exceptions
+          (println t))))))
+
 (defn setup
   ([repl-env] (setup repl-env nil))
-  ([{:keys [state socket] :as repl-env} opts]
+  ([{:keys [options state socket] :as repl-env} opts]
    (let [[bonjour-name {:keys [host port] :as ep}]
-         (mdns/discover (boolean (:choose-first (:options repl-env))))
+         (mdns/discover (boolean (:choose-first options)))
          host (mdns/local-address-if host)]
      (swap! state merge {:host host :port port})
      (println
@@ -239,6 +276,15 @@
      (when-not @socket
        (connect repl-env)
        (.start (Thread. (bound-fn [] (event-loop repl-env))))
+       ;; create and start the watcher
+       (swap! state assoc :watcher
+         (doto
+           (apply watcher/create
+             ;; have to pass the processed opts
+             ;; the compiler one are the original ones
+             (bound-fn [e] (recompile repl-env e opts))
+             (:watch-dirs options))
+           (watcher/watch)))
        ;; compile cljs.core & its dependencies, goog/base.js must be available
        ;; for bootstrap to load, use new closure/compile as it can handle
        ;; resources in JARs
@@ -324,6 +370,8 @@
   (-tear-down [this]
     (let [sock @socket]
       (swap! state assoc :done true)
+      (when-let [w (:watcher @state)]
+        (watcher/stop w))
       (when (and (:socket sock)
                  (not (.isClosed (:socket sock))))
         (write (:out sock) ":cljs/quit")
