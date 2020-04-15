@@ -34,6 +34,7 @@ Krell generates a single file output without the REPL dependencies.
 
 ## Requirements
 
+* Node >= 10.16.0
 * Latest release of ClojureScript
 * Java SDK 8+
 
