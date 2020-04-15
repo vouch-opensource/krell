@@ -194,7 +194,7 @@
                  (->> (js-obj "type" "err" "value" str)
                    (.stringify js/JSON)
                    (.write out))
-                 (.write out "0"))))))))))
+                 (.write out "\0"))))))))))
 
 (defn connect [{:keys [options socket state] :as repl-env}]
   (let [start (util/now)
