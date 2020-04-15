@@ -100,8 +100,7 @@
 (defn load-javascript
   "Load a Closure JavaScript file into the React Native REPL"
   [repl-env provides url]
-  (rn-eval repl-env
-    (str "goog.require('" (comp-api/munge (first provides)) "')")))
+  (rn-eval repl-env (slurp url)))
 
 (defn event-loop
   "Event loop that listens for responses from the client."
