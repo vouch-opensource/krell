@@ -72,6 +72,12 @@ var notifyListeners = function(request) {
     });
 };
 
+var notifyReloadListeners = function() {
+    reloadListeners.forEach(function(x) {
+        x();
+    });
+};
+
 var onSourceLoad = function(path, cb) {
     if(typeof libLoadListeners[path] === "undefined") {
         libLoadListeners[path] = [];
@@ -139,6 +145,9 @@ var handleMessage = function(socket, data){
 
         if (req) {
             notifyListeners(req);
+            if(req.reload) {
+                notifyReloadListeners();
+            }
         }
     }
 };
