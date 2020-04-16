@@ -8,6 +8,7 @@ var REPL_PORT = IS_ANDROID ? 5003 : 5002;
 var evaluate = eval;
 var libLoadListeners = {};
 var reloadListeners = [];
+var pendingLoads_ = [];
 
 // =============================================================================
 // ZeroConf Service Publication / Discovery
@@ -41,10 +42,21 @@ var loadFileSocket = null;
 
 var loadFile = function(socket, path) {
     var req = {
-        type: "load-file",
-        value: path
-    };
-    socket.write(JSON.stringify(req)+"\0");
+            type: "load-file",
+            value: path
+        },
+        payload = JSON.stringify(req) + "\0";
+
+    if (!IS_ANDROID) {
+        socket.write(payload);
+    } else {
+        pendingLoads_.push(payload)
+    }
+};
+
+var flushLoads_ = function(socket) {
+    socket.write(pendingLoads_.join(""));
+    pendingLoads_ = [];
 };
 
 // NOTE: CLOSURE_LOAD_FILE_SYNC not needed as ClojureScript now transpiles
@@ -89,6 +101,18 @@ var onKrellReload = function(cb) {
     reloadListeners.push(cb);
 };
 
+var errString = function(err) {
+    if(typeof cljs !== "undefined") {
+        if(typeof cljs.repl !== "undefined") {
+            cljs.repl.error__GT_str(err)
+        } else {
+            return err.toString();
+        }
+    } else {
+        return err.toString();
+    }
+};
+
 var handleMessage = function(socket, data){
     var req = null,
         err = null,
@@ -110,8 +134,16 @@ var handleMessage = function(socket, data){
                     ret(socket);
                 }
             }
+            /*
+            if(req && req.type === "load-file") {
+                console.log("LOAD FILE:", req.value);
+            }
+             */
+            if(pendingLoads_.length > 0) {
+                flushLoads_(socket);
+            }
         } catch (e) {
-            console.log(e, obj.form);
+            console.error(e, obj.form);
             err = e;
         }
     }
@@ -121,7 +153,7 @@ var handleMessage = function(socket, data){
             JSON.stringify({
                 type: "result",
                 status: "exception",
-                value: (typeof cljs != "undefined") ? cljs.repl.error__GT_str(err) : err.toString()
+                value: errString(err)
             })+"\0"
         );
     } else {
