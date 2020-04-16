@@ -9,6 +9,7 @@
             [clojure.data.json :as json]
             [clojure.java.io :as io]
             [clojure.string :as string]
+            [krell.deps :as deps]
             [krell.gen :as gen]
             [krell.mdns :as mdns]
             [krell.util :as util]
@@ -136,6 +137,13 @@
      (:value
        (rn-eval repl-env
          "(function(){return (typeof cljs !== 'undefined');})()"))))
+
+(defn load-core [repl-env opts]
+  (doseq [ijs (deps/with-out-files
+                (deps/all-deps 'cljs.core
+                  (ana-api/current-state) opts)
+                opts)]
+    (rn-eval repl-env (slurp (:out-file ijs)))))
 
 (defn init-js-env
   ([repl-env]
