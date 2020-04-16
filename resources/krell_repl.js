@@ -45,17 +45,64 @@ var loadFile = function(socket, path) {
             type: "load-file",
             value: path
         },
-        payload = JSON.stringify(req) + "\0";
-
+        payload = JSON.stringify(req)+"\0";
     if (!IS_ANDROID) {
         socket.write(payload);
     } else {
-        pendingLoads_.push(payload)
+        pendingLoads_.push(req)
     }
 };
 
+var exists_ = function(obj, xs) {
+    if(typeof xs == "string") {
+        xs = xs.split(".");
+    }
+    if(xs.length >= 1) {
+        var key = xs[0],
+            hasKey = obj.hasOwnProperty(key);
+        if (xs.length === 1) {
+            return hasKey;
+        } else {
+            if(hasKey) {
+                return exists_(obj[key], xs.slice(1));
+            }
+        }
+        return false;
+    } else {
+        return false;
+    }
+};
+
+var pathToIds_ = function() {
+    var pathToIds = {};
+    for(var id in goog.debugLoader_.idToPath_) {
+        var path = goog.debugLoader_.idToPath_[id];
+        if(pathToIds[path] == null) {
+            pathToIds[path] = [];
+        }
+        pathToIds[path].push(id);
+    }
+    return pathToIds;
+};
+
+var isLoaded_ = function(path, index) {
+    var ids = index[path];
+    for(var i = 0; i < ids.length; i++) {
+        if(exists_(global, ids[i])) {
+            return true;
+        }
+    }
+    return false;
+};
+
 var flushLoads_ = function(socket) {
-    socket.write(pendingLoads_.join(""));
+    var index    = pathToIds_(),
+        filtered = pendingLoads_.filter(function(req) {
+                       return !isLoaded_(req.value, index);
+                   }).map(function(req) {
+                       return JSON.stringify(req)+"\0";
+                   });
+    socket.write(filtered.join(""));
     pendingLoads_ = [];
 };
 
@@ -138,7 +185,7 @@ var handleMessage = function(socket, data){
             if(req && req.type === "load-file") {
                 console.log("LOAD FILE:", req.value);
             }
-             */
+            */
             if(pendingLoads_.length > 0) {
                 flushLoads_(socket);
             }
