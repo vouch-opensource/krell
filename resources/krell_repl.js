@@ -8,6 +8,7 @@ var REPL_PORT = IS_ANDROID ? 5003 : 5002;
 var evaluate = eval;
 var libLoadListeners = {};
 var reloadListeners = [];
+var pendingLoads_ = [];
 
 // =============================================================================
 // ZeroConf Service Publication / Discovery
@@ -41,10 +42,68 @@ var loadFileSocket = null;
 
 var loadFile = function(socket, path) {
     var req = {
-        type: "load-file",
-        value: path
-    };
-    socket.write(JSON.stringify(req)+"\0");
+            type: "load-file",
+            value: path
+        },
+        payload = JSON.stringify(req)+"\0";
+    if (!IS_ANDROID) {
+        socket.write(payload);
+    } else {
+        pendingLoads_.push(req)
+    }
+};
+
+var exists_ = function(obj, xs) {
+    if(typeof xs == "string") {
+        xs = xs.split(".");
+    }
+    if(xs.length >= 1) {
+        var key = xs[0],
+            hasKey = obj.hasOwnProperty(key);
+        if (xs.length === 1) {
+            return hasKey;
+        } else {
+            if(hasKey) {
+                return exists_(obj[key], xs.slice(1));
+            }
+        }
+        return false;
+    } else {
+        return false;
+    }
+};
+
+var pathToIds_ = function() {
+    var pathToIds = {};
+    for(var id in goog.debugLoader_.idToPath_) {
+        var path = goog.debugLoader_.idToPath_[id];
+        if(pathToIds[path] == null) {
+            pathToIds[path] = [];
+        }
+        pathToIds[path].push(id);
+    }
+    return pathToIds;
+};
+
+var isLoaded_ = function(path, index) {
+    var ids = index[path];
+    for(var i = 0; i < ids.length; i++) {
+        if(exists_(global, ids[i])) {
+            return true;
+        }
+    }
+    return false;
+};
+
+var flushLoads_ = function(socket) {
+    var index    = pathToIds_(),
+        filtered = pendingLoads_.filter(function(req) {
+                       return !isLoaded_(req.value, index);
+                   }).map(function(req) {
+                       return JSON.stringify(req)+"\0";
+                   });
+    socket.write(filtered.join(""));
+    pendingLoads_ = [];
 };
 
 // NOTE: CLOSURE_LOAD_FILE_SYNC not needed as ClojureScript now transpiles
@@ -89,6 +148,18 @@ var onKrellReload = function(cb) {
     reloadListeners.push(cb);
 };
 
+var errString = function(err) {
+    if(typeof cljs !== "undefined") {
+        if(typeof cljs.repl !== "undefined") {
+            cljs.repl.error__GT_str(err)
+        } else {
+            return err.toString();
+        }
+    } else {
+        return err.toString();
+    }
+};
+
 var handleMessage = function(socket, data){
     var req = null,
         err = null,
@@ -110,8 +181,16 @@ var handleMessage = function(socket, data){
                     ret(socket);
                 }
             }
+            /*
+            if(req && req.type === "load-file") {
+                console.log("LOAD FILE:", req.value);
+            }
+            */
+            if(pendingLoads_.length > 0) {
+                flushLoads_(socket);
+            }
         } catch (e) {
-            console.log(e, obj.form);
+            console.error(e, obj.form);
             err = e;
         }
     }
@@ -121,7 +200,7 @@ var handleMessage = function(socket, data){
             JSON.stringify({
                 type: "result",
                 status: "exception",
-                value: (typeof cljs != "undefined") ? cljs.repl.error__GT_str(err) : err.toString()
+                value: errString(err)
             })+"\0"
         );
     } else {
