@@ -139,11 +139,15 @@
          "(function(){return (typeof cljs !== 'undefined');})()"))))
 
 (defn load-core [repl-env opts]
-  (doseq [ijs (deps/with-out-files
-                (deps/all-deps 'cljs.core
-                  (ana-api/current-state) opts)
-                opts)]
-    (rn-eval repl-env (slurp (:out-file ijs)))))
+  (doseq [ijs (-> (deps/sorted-deps
+                    (ana-api/current-state) 'cljs.core opts)
+                (deps/with-out-files opts))]
+    (let [out-file (:out-file ijs)
+          contents (slurp out-file)]
+      (rn-eval repl-env contents
+        {:type  "load-file"
+         :ns    (-> ijs :provides first)
+         :value (.getPath ^File out-file)}))))
 
 (defn init-js-env
   ([repl-env]
@@ -171,14 +175,11 @@
      (when (.exists cljs-deps)
        (rn-eval repl-env (slurp cljs-deps)))
      (when-not (core-loaded? repl-env)
-       (repl/evaluate-form repl-env env "<cljs repl>"
-         '(do
-            (.require js/goog "cljs.core")))
-       ;; TODO: we can't merge this with the above, but note this doesn't work
-       ;; in general (even with plain Closure JavaScript), require runs a bunch of
-       ;; async loads and the following JS expression won't have access to any defs.
-       ;; it only works in the Node.js REPL because we have the option for sync
-       ;; loads - this is not possible in React Native
+       ;; We cannot rely on goog.require because the debug loader assumes
+       ;; you can load script synchronously which isn't possible in React
+       ;; Native. Push core to the client and wait till everything is received
+       ;; before proceeding
+       (load-core repl-env opts)
        (repl/evaluate-form repl-env env "<cljs repl>"
          '(enable-console-print!))
        (bootstrap/install-repl-goog-require repl-env env))
