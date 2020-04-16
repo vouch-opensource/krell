@@ -35,6 +35,11 @@
   (let [sorted-keys (mg/topo-sort graph :requires)]
     (distinct (map graph sorted-keys))))
 
+(defn sorted-deps [state ns opts]
+  (let [all   (all-deps state ns opts)
+        graph (deps->graph all)]
+    (topo-sort graph)))
+
 (defn get-out-file ^File [dep opts]
   (io/file
     (if (:ns dep)
