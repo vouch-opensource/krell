@@ -29,9 +29,11 @@
         acc (:provides dep)))
     {} deps))
 
-(defn topo-sort [graph]
+(defn topo-sort
+  "Give a dep graph return the topologically sorted sequence of inputs."
+  [graph]
   (let [sorted-keys (mg/topo-sort graph :requires)]
-    (dedupe (map graph sorted-keys))))
+    (distinct (map graph sorted-keys))))
 
 (defn get-out-file ^File [dep opts]
   (io/file
@@ -42,18 +44,9 @@
 (defn add-out-file [dep opts]
   (assoc dep :out-file (get-out-file dep opts)))
 
-(defn with-out-files [deps opts]
+(defn with-out-files
+  "Given a list of deps return a new list of deps with :out-file property
+   on each value."
+  [deps opts]
   (into [] (map #(add-out-file % opts)) deps))
 
-(comment
-  (require '[clojure.pprint :refer [pprint]])
-
-  (let [opts {:output-dir "target"}
-        state (ana-api/empty-state)]
-    (pprint
-      (map :out-file
-        (with-out-files
-          (dedupe (topo-sort (deps->graph (all-deps state 'cljs.core opts))))
-          opts))))
-
-  )
