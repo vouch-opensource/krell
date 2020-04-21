@@ -1,7 +1,8 @@
 import TcpSocket from "react-native-tcp-socket";
 import Zeroconf from "react-native-zeroconf";
 import { getApplicationName, getDeviceId, getSystemName } from 'react-native-device-info';
-import {npmDeps} from "./npm_deps.js";
+import { npmDeps } from "./npm_deps.js";
+import { assets } from "./krell_assets.js";
 
 var IS_ANDROID = (getSystemName() === "Android");
 var REPL_PORT = IS_ANDROID ? 5003 : 5002;
@@ -118,8 +119,8 @@ global.CLOSURE_IMPORT_SCRIPT = function(path, optContents) {
     }
 };
 
-global.require = function(lib) {
-    return npmDeps[lib];
+global.require = function(x) {
+    return npmDeps[x] || assets[x];
 };
 
 var notifyListeners = function(request) {

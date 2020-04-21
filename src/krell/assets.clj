@@ -36,6 +36,7 @@
 (defn assets-js [assets]
   (str
     "module.exports = {\n"
+    "  assets: {\n"
     (string/join ",\n" (map (comp #(str "    " %) asset-require) assets))
     "  }\n"
     "};\n"))

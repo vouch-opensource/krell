@@ -8,12 +8,10 @@
             [krell.util :as util])
   (:import [java.io File]))
 
+(def ^:dynamic *state* nil)
+
 (defn normalize [s]
   (cond-> s (string/starts-with? s "./") (subs 2)))
-
-(defn ns->parent-path [ns]
-  (let [xs (string/split (-> ns comp-api/munge str) #"\.")]
-    (string/join File/separator (butlast xs))))
 
 (defn asset? [s]
   (and (not (nil? (util/file-ext s)))
@@ -31,14 +29,17 @@
 
 (defn rewrite-asset-requires [env ast opts]
   (if (js-require-asset? ast)
-    (update-require-path ast
-      (let [ns (-> env :ns :name)]
-        (util/get-path
-          (util/relativize
-            (.getAbsoluteFile (io/file (:output-dir opts) (ns->parent-path ns)))
-            (io/file
-              (.getParentFile (io/file ana/*cljs-file*))
-              (normalize (-> ast :args first :val)))))))
+    (let [new-path
+          (let [ns (-> env :ns :name)]
+            (util/get-path
+              (util/relativize
+                (.getAbsoluteFile (io/file (:output-dir opts)))
+                (io/file
+                  (.getParentFile (io/file ana/*cljs-file*))
+                  (normalize (-> ast :args first :val))))))]
+      (when *state*
+        (swap! *state* update :assets (fnil conj #{}) new-path))
+      (update-require-path ast new-path))
     ast))
 
 (comment

@@ -358,15 +358,18 @@
   [repl-env {:keys [options repl-env-options] :as cfg}]
   (gen/write-index-js options)
   (gen/write-repl-js options)
-  ;;(copy-assets (apply repl-env repl-env-options) options)
-  (let [opt-level (:optimizations options)]
-    (ana-api/with-passes
-      (conj ana-api/default-passes passes/rewrite-asset-requires)
-      (cli/default-compile repl-env
-        (cond-> cfg
-          (not (or (= :none opt-level) (nil? opt-level)))
-          (assoc-in [:options :output-wrapper]
-            (fn [source] (str source (gen/krell-main-js options)))))))))
+  (let [opt-level (:optimizations options)
+        state     (atom {})]
+    (binding [passes/*state* state]
+      (ana-api/with-passes
+        (conj ana-api/default-passes passes/rewrite-asset-requires)
+        (cli/default-compile repl-env
+          (cond-> cfg
+            (not (or (= :none opt-level) (nil? opt-level)))
+            (assoc-in [:options :output-wrapper]
+              (fn [source] (str source (gen/krell-main-js options))))))))
+    (when-let [assets (-> @state :assets seq)]
+      (gen/write-assets-js assets options))))
 
 (defrecord KrellEnv [options socket state]
   repl/IReplEnvOptions
