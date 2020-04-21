@@ -46,10 +46,10 @@
 (defn relativize [^File parent ^File child]
   (to-file (.relativize (to-path parent) (to-path child))))
 
-(defn file-ext [^File f]
-  (let [path (.getPath f)
-        idx  (.lastIndexOf path ".")]
-    (when (pos? idx) (subs path idx))))
+(defn file-ext [f]
+  (let [path (if (file? f) (.getPath ^File f) f)]
+    (let [idx (.lastIndexOf path ".")]
+      (when (pos? idx) (subs path idx)))))
 
 (defn file-tree-seq [dir]
   (tree-seq
