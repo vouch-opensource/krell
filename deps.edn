@@ -1,6 +1,6 @@
 {:paths ["src" "resources"]
  :deps {org.clojure/clojurescript {:git/url "https://github.com/clojure/clojurescript.git"
-                                   :sha "2a2b472d8a43eb1f6c64f5a6001d7e3848cd6c1d"}
+                                   :sha "16395d2a2fcab47c6007e09e65e0b4e7f0bb974a"}
         com.github.rickyclarkson/jmdns {:mvn/version "3.4.2-r353-1"}
         io.methvin/directory-watcher {:mvn/version "0.9.9"}}
  :aliases {:repl {:extra-paths ["test"]
