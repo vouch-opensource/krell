@@ -35,7 +35,7 @@
       (let [ns (-> env :ns :name)]
         (util/get-path
           (util/relativize
-            (io/file (:output-dir opts) (ns->parent-path ns))
+            (.getAbsoluteFile (io/file (:output-dir opts) (ns->parent-path ns)))
             (io/file
               (.getParentFile (io/file ana/*cljs-file*))
               (normalize (-> ast :args first :val)))))))
