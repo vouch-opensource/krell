@@ -29,3 +29,13 @@
         (util/to-path source)
         (io/output-stream target))
       (.setLastModified target (util/last-modified source)))))
+
+(defn asset-require [path]
+  (str "\"" path "\": require('" path "')" ))
+
+(defn asset-js [assets]
+  (str
+    "module.exports = {\n"
+    (string/join ",\n" (map (comp #(str "    " %) asset-require) assets))
+    "  }\n"
+    "};\n"))
