@@ -43,8 +43,8 @@
 (defn to-path ^Path [^File f]
   (.toPath f))
 
-(defn relativize [^File parent ^File child]
-  (to-file (.relativize (to-path parent) (to-path child))))
+(defn relativize [^File source ^File target]
+  (to-file (.relativize (to-path source) (to-path target))))
 
 (defn get-path [^File f]
   (.getPath f))
