@@ -1,12 +1,9 @@
 (ns krell.passes
   (:require [cljs.analyzer :as ana]
-            [cljs.analyzer.api :as api]
-            [cljs.compiler.api :as comp-api]
             [clojure.java.io :as io]
             [clojure.string :as string]
             [krell.assets :as assets]
-            [krell.util :as util])
-  (:import [java.io File]))
+            [krell.util :as util]))
 
 (def ^:dynamic *state* nil)
 
@@ -41,23 +38,3 @@
         (swap! *state* update :assets (fnil conj #{}) new-path))
       (update-require-path ast new-path))
     ast))
-
-(comment
-
-  (require '[clojure.pprint :refer [pprint]])
-
-  (let [state (api/empty-state)
-        env   (api/empty-env)]
-    (->
-      (binding [ana/*cljs-file* "src/hello_world/core.cljs"]
-        (api/with-passes (conj api/default-passes rewrite-asset-requires)
-          (api/analyze state env '(js/require "./foo.png") nil
-            {:output-dir "target"})))
-      :args first))
-
-  ;; works
-  (util/relativize
-    (io/file "target/cljs/user")
-    (io/file "src/cljs/user/foo.png"))
-
-  )
