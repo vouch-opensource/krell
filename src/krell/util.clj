@@ -46,6 +46,9 @@
 (defn relativize [^File parent ^File child]
   (to-file (.relativize (to-path parent) (to-path child))))
 
+(defn get-path [^File f]
+  (.getPath f))
+
 (defn file-ext [f]
   (let [path (if (file? f) (.getPath ^File f) f)]
     (let [idx (.lastIndexOf path ".")]
