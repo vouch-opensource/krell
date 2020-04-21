@@ -20,13 +20,12 @@
   (filter asset? (util/file-tree-seq dir)))
 
 (defn copy-asset
-  "source argument must be a relative path on the classpath. Opts is
-  ClojureScript compiler options."
-  [^File source opts]
-  (let [target (io/file (:output-dir opts) source)]
+  [^File source rel-root opts]
+  (let [target (io/file (:output-dir opts)
+                 (util/relativize (io/file rel-root) source))]
     (when (or (not (.exists target))
               (util/changed? source target))
       (Files/copy
         (util/to-path source)
-        (util/to-path target))
+        (io/output-stream target))
       (.setLastModified target (util/last-modified source)))))

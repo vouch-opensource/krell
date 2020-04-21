@@ -9,6 +9,7 @@
             [clojure.data.json :as json]
             [clojure.java.io :as io]
             [clojure.string :as string]
+            [krell.assets :as assets]
             [krell.deps :as deps]
             [krell.gen :as gen]
             [krell.mdns :as mdns]
@@ -342,10 +343,18 @@
   [cfg value]
   (assoc-in cfg [:repl-env-options :choose-first] (= value "true")))
 
+(defn copy-assets [repl-env opts]
+  (let [watch-dirs (-> repl-env :options :watch-dirs)]
+    (doseq [dir-str watch-dirs]
+      (let [dir (io/file dir-str)]
+        (doseq [asset (assets/asset-file-seq dir)]
+          (assets/copy-asset asset dir opts))))))
+
 (defn krell-compile
-  [repl-env {:keys [options] :as cfg}]
+  [repl-env {:keys [options repl-env-options] :as cfg}]
   (gen/write-index-js options)
   (gen/write-repl-js options)
+  (copy-assets (apply repl-env repl-env-options) options)
   (let [opt-level (:optimizations options)]
     (cli/default-compile repl-env
       (cond-> cfg
