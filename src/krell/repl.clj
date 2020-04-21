@@ -347,13 +347,6 @@
   [cfg value]
   (assoc-in cfg [:repl-env-options :choose-first] (= value "true")))
 
-(defn copy-assets [repl-env opts]
-  (let [watch-dirs (-> repl-env :options :watch-dirs)]
-    (doseq [dir-str watch-dirs]
-      (let [dir (io/file dir-str)]
-        (doseq [asset (assets/asset-file-seq dir)]
-          (assets/copy-asset asset dir opts))))))
-
 (defn krell-compile
   [repl-env {:keys [options repl-env-options] :as cfg}]
   (gen/write-index-js options)
