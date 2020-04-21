@@ -34,7 +34,7 @@
   (update-in ast [:args 0] merge
     {:val new-path :form new-path}))
 
-(defn collect-requires [watch-dir]
+(defn rewrite-asset-requires [watch-dir]
   (fn [env ast opts]
     (if (js-require-asset? ast)
       (update-require-path ast
@@ -53,7 +53,7 @@
   (let [state (api/empty-state)
         env   (api/empty-env)]
     (->
-      (api/with-passes (conj api/default-passes (collect-requires "src"))
+      (api/with-passes (conj api/default-passes (rewrite-asset-requires "src"))
         (api/analyze state env '(js/require "./foo.png") nil
           {:output-dir "target"}))
       :args first))
