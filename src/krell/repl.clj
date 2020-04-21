@@ -9,9 +9,11 @@
             [clojure.data.json :as json]
             [clojure.java.io :as io]
             [clojure.string :as string]
+            [krell.assets :as assets]
             [krell.deps :as deps]
             [krell.gen :as gen]
             [krell.mdns :as mdns]
+            [krell.passes :as passes]
             [krell.util :as util]
             [krell.watcher :as watcher])
   (:import [clojure.lang ExceptionInfo]
@@ -278,10 +280,13 @@
               (build-api/add-dependency-sources [ns-info] opts))
             opts)
           (ana-api/with-warning-handlers [handler]
-            (comp-api/compile-file state
-              (:source-file ns-info)
-              (build-api/target-file-for-cljs-ns
-                (:ns ns-info) (:output-dir opts)) opts))
+            (ana-api/with-passes
+              ;; TODO: touch index.js? or do something else?
+              (conj ana-api/default-passes passes/rewrite-asset-requires)
+              (comp-api/compile-file state
+                (:source-file ns-info)
+                (build-api/target-file-for-cljs-ns
+                  (:ns ns-info) (:output-dir opts)) opts)))
           (if (empty? @warns)
             (rn-eval repl-env (slurp dest)
               {:type   "load-file"
@@ -343,15 +348,21 @@
   (assoc-in cfg [:repl-env-options :choose-first] (= value "true")))
 
 (defn krell-compile
-  [repl-env {:keys [options] :as cfg}]
+  [repl-env {:keys [options repl-env-options] :as cfg}]
   (gen/write-index-js options)
   (gen/write-repl-js options)
-  (let [opt-level (:optimizations options)]
-    (cli/default-compile repl-env
-      (cond-> cfg
-        (not (or (= :none opt-level) (nil? opt-level)))
-        (assoc-in [:options :output-wrapper]
-          (fn [source] (str source (gen/krell-main-js options))))))))
+  (let [opt-level (:optimizations options)
+        state     (atom {})]
+    (binding [passes/*state* state]
+      (ana-api/with-passes
+        (conj ana-api/default-passes passes/rewrite-asset-requires)
+        (cli/default-compile repl-env
+          (cond-> cfg
+            (not (or (= :none opt-level) (nil? opt-level)))
+            (assoc-in [:options :output-wrapper]
+              (fn [source] (str source (gen/krell-main-js options))))))))
+    (when-let [assets (-> @state :assets seq)]
+      (gen/write-assets-js assets options))))
 
 (defrecord KrellEnv [options socket state]
   repl/IReplEnvOptions
