@@ -8,7 +8,7 @@
 (defn ignore? [^File f]
   (string/starts-with? (.getName f) "."))
 
-(defn clojure? [^File f]
+(defn clojure? [f]
   (#{".clj" ".cljc" ".cljs"} (util/file-ext f)))
 
 (defn asset? [^File f]
