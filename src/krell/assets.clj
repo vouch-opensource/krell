@@ -19,9 +19,13 @@
 (defn asset-file-seq [dir]
   (filter asset? (util/file-tree-seq dir)))
 
-(defn copy-asset [^File source opts]
-  (let [target (io/file (:output-dir opts))]
-    (when (util/changed? source target)
+(defn copy-asset
+  "source argument must be a relative path on the classpath. Opts is
+  ClojureScript compiler options."
+  [^File source opts]
+  (let [target (io/file (:output-dir opts) source)]
+    (when (or (not (.exists target))
+              (util/changed? source target))
       (Files/copy
         (util/to-path source)
         (util/to-path target))
