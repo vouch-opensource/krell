@@ -1,7 +1,7 @@
 (ns krell.gen
-  (:require [cljs.util :as util]
-            [clojure.java.io :as io]
-            [clojure.string :as string]))
+  (:require [clojure.java.io :as io]
+            [clojure.string :as string]
+            [krell.util :as util]))
 
 (defn write-index-js
   "Write the Krell index.js file which bootstraps the Krell application.

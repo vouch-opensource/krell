@@ -43,6 +43,9 @@
 (defn to-path ^Path [^File f]
   (.toPath f))
 
+(defn relativize [^File parent ^File child]
+  (to-file (.relativize (to-path parent) (to-path child))))
+
 (defn file-ext [^File f]
   (let [path (.getPath f)
         idx  (.lastIndexOf path ".")]
@@ -55,3 +58,8 @@
     (fn [^File d]
       (seq (. d (listFiles))))
     dir))
+
+(defn mkdirs
+  "Create all parent directories for the passed file."
+  [^File f]
+  (.mkdirs (.getParentFile (.getCanonicalFile f))))
