@@ -1,6 +1,7 @@
 (ns krell.gen
   (:require [clojure.java.io :as io]
             [clojure.string :as string]
+            [krell.assets :as assets]
             [krell.util :as util]))
 
 (defn write-index-js
@@ -27,6 +28,13 @@
         out-file (io/file (:output-dir opts) "krell_repl.js")]
     (util/mkdirs out-file)
     (spit out-file source)))
+
+(defn write-assets-js
+  "Write out the REPL asset support code."
+  [assets opts]
+  (let [out-file (io/file (:output-dir opts) "krell_assets.js")]
+    (util/mkdirs out-file)
+    (spit out-file (assets/assets-js assets))))
 
 (defn krell-main-js
   "Return the source for build dependent entry point. See resources/main.dev.js

@@ -33,7 +33,7 @@
 (defn asset-require [path]
   (str "\"" path "\": require('" path "')" ))
 
-(defn asset-js [assets]
+(defn assets-js [assets]
   (str
     "module.exports = {\n"
     (string/join ",\n" (map (comp #(str "    " %) asset-require) assets))
