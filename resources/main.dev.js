@@ -1,4 +1,4 @@
-import {onSourceLoad, onKrellReload} from './krell_repl.js';
+import {onSourceLoad, onKrellReload, publishReplService} from './krell_repl.js';
 
 var main = '$KRELL_MAIN_NS';
 
@@ -48,6 +48,7 @@ function getMainFn(ns) {
 }
 
 function krellUpdateRoot(cb) {
+    publishReplService();
     waitForCore(function() {
         var xs = main.split(".");
         if(!exists(global, xs)) {

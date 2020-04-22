@@ -10,6 +10,7 @@ var evaluate = eval;
 var libLoadListeners = {};
 var reloadListeners = [];
 var pendingLoads_ = [];
+var repub_ = 0;
 
 // =============================================================================
 // ZeroConf Service Publication / Discovery
@@ -34,7 +35,21 @@ zeroconf.on("resolved", service => {
 
 zeroconf.scan("http", "tcp", "local.");
 
-zeroconf.publishService("http", "tcp", "local.", bonjourName(), REPL_PORT);
+var repubTimeout_ = function() {
+    if(repub_ < 10) {
+        repub_ = repub_ + 1;
+        return (250 * (2**repub_));
+    } else {
+        return 256000;
+    }
+};
+
+var publishReplService = function() {
+    zeroconf.publishService("http", "tcp", "local.", bonjourName(), REPL_PORT);
+    if(IS_ANDROID) {
+        setTimeout(publishReplService, repubTimeout_());
+    }
+};
 
 // =============================================================================
 // REPL Server
@@ -280,5 +295,6 @@ server.on("close", () => {
 
 module.exports = {
     onSourceLoad: onSourceLoad,
-    onKrellReload: onKrellReload
+    onKrellReload: onKrellReload,
+    publishReplService: publishReplService
 };
