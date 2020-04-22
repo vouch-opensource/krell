@@ -370,6 +370,7 @@
      :output-dir    ".krell_repl"
 
      ;; RN target defaults
+     :process-shim  false
      :target        :bundle
      :target-fn     'krell.gen/krell-main-js
 
