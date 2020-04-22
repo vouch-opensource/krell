@@ -57,6 +57,7 @@ function krellUpdateRoot(cb) {
                     return getMainFn(main)();
                 });
             });
+            $CLJS_PRELOADS
             goog.require(main);
         } else {
             cb(() => {
