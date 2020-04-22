@@ -361,8 +361,7 @@
             (not (or (= :none opt-level) (nil? opt-level)))
             (assoc-in [:options :output-wrapper]
               (fn [source] (str source (gen/krell-main-js options))))))))
-    (when-let [assets (-> @state :assets seq)]
-      (gen/write-assets-js assets options))))
+    (gen/write-assets-js (:assets @state) options)))
 
 (defrecord KrellEnv [options socket state]
   repl/IReplEnvOptions
