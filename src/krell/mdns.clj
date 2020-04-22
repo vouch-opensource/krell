@@ -13,7 +13,7 @@
   Returns a function that will tear down mDNS."
   [{:keys [type protocol domain endpoint-map match-name]}]
   (let [reg-type (str "_" type "._" protocol "." domain)
-        mdns-service (JmDNS/create)
+        mdns-service (JmDNS/create (InetAddress/getLocalHost))
         service-listener
         (reify ServiceListener
           (serviceAdded [_ service-event]
