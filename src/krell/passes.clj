@@ -31,9 +31,10 @@
             (util/get-path
               (util/relativize
                 (.getAbsoluteFile (io/file (:output-dir opts)))
-                (io/file
-                  (.getParentFile (io/file ana/*cljs-file*))
-                  (normalize (-> ast :args first :val))))))]
+                (.getAbsoluteFile
+                  (io/file
+                    (.getParentFile (io/file ana/*cljs-file*))
+                    (normalize (-> ast :args first :val)))))))]
       (when *state*
         (swap! *state* update :assets (fnil conj #{}) new-path))
       (update-require-path ast new-path))
