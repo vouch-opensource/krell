@@ -1,5 +1,6 @@
 (ns krell.gen
-  (:require [clojure.java.io :as io]
+  (:require [cljs.compiler.api :as comp-api]
+            [clojure.java.io :as io]
             [clojure.string :as string]
             [krell.assets :as assets]
             [krell.util :as util]))
@@ -36,6 +37,9 @@
     (util/mkdirs out-file)
     (spit out-file (assets/assets-js assets))))
 
+(defn goog-require-str [sym]
+  (str "goog.require(\"" (comp-api/munge sym) "\");"))
+
 (defn krell-main-js
   "Return the source for build dependent entry point. See resources/main.dev.js
   and resources/main.prod.js"
@@ -45,4 +49,6 @@
                    (io/resource "main.dev.js")
                    (io/resource "main.prod.js")))]
     (-> source
-      (string/replace "$KRELL_MAIN_NS" (str (munge (:main opts)))))))
+      (string/replace "$KRELL_MAIN_NS" (str (munge (:main opts))))
+      (string/replace "$CLJS_PRELOADS"
+        (string/join "\n" (map goog-require-str (:preloads opts)))))))
