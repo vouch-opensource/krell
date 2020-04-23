@@ -65,8 +65,6 @@
              (load-queued-files repl-env)
              ret)))))))
 
-(declare rn-eval)
-
 (defn load-queued-files [repl-env]
   (loop [{:keys [value] :as load-file-req} (.poll load-queue)]
     (when load-file-req
