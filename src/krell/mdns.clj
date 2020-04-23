@@ -1,19 +1,27 @@
 (ns krell.mdns
   (:require [clojure.string :as string])
   (:import [java.net InetAddress Inet4Address NetworkInterface]
-           [javax.jmdns JmDNS ServiceListener]))
+           [javax.jmdns JmDNS ServiceListener ServiceInfo]))
 
 (def krell-prefix "krell.repl")
 
 (defn rn-repl? [name]
   (string/starts-with? name krell-prefix))
 
+(defn config->type
+  [{:keys [type protocol domain]}]
+  (str "_" type "._" protocol "." domain))
+
+(defn jmdns []
+  (let [ip (InetAddress/getLocalHost)]
+    (JmDNS/create ip (.getHostName ip))))
+
 (defn setup
   "Sets up mDNS to populate atom supplied in name-endpoint-map with discoveries.
   Returns a function that will tear down mDNS."
-  [{:keys [type protocol domain endpoint-map match-name]}]
-  (let [reg-type (str "_" type "._" protocol "." domain)
-        mdns-service (JmDNS/create (InetAddress/getLocalHost))
+  [{:keys [endpoint-map match-name] :as cfg}]
+  (let [reg-type (config->type cfg)
+        mdns-service (jmdns)
         service-listener
         (reify ServiceListener
           (serviceAdded [_ service-event]
@@ -145,3 +153,14 @@
                 (recur cep-map))))))
       (finally
         (.start (Thread. tear-down-mdns))))))
+
+(defn krell-service-info ^ServiceInfo
+  ([]
+   (krell-service-info 5001))
+  ([port]
+   (ServiceInfo/create
+     (config->type {:type "http" :protocol "tcp" :domain "local."})
+     (str "Krell-REPL-Server:" port) port "Krell REPL Server")))
+
+(defn register-service [^JmDNS jmdns ^ServiceInfo service-info]
+  (.registerService jmdns service-info))
