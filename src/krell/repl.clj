@@ -282,7 +282,9 @@
   [{:keys [socket] :as repl-env} server-socket]
   (when-let [socket (try (.accept server-socket) (catch Throwable _))]
     (.setKeepAlive socket true)
-    ;; NOTE: ignore new connections for now
+    ;; TODO: just ignoring new connections for now, maybe we want to do
+    ;; something else? i.e. the current socket was closed because of a RN
+    ;; reload
     (when-not @socket
       (reset! socket (net/socket->socket-map socket)))
     (recur repl-env server-socket)))
@@ -290,49 +292,49 @@
 (defn setup
   ([repl-env] (setup repl-env nil))
   ([{:keys [options state socket] :as repl-env} opts]
-   (let [
-         ;repl-service (mdns/jmdns)
-         ;repl-service-info (mdns/krell-service-info (+ 5000 (rand-int 1000)))
-         ;_ (future
-         ;    (while true
-         ;      (mdns/register-service repl-service repl-service-info)
-         ;      (Thread/sleep 1000)))
-         ]
-     (when-not (false? (:mdns options))
-       (let [[bonjour-name {:keys [host port] :as ep}] (mdns/discover (boolean (:choose-first options)))
-             host (mdns/local-address-if host)]
-         (swap! state merge {:host host :port port})
-         (println
-           (str "\nConnecting to " (mdns/bonjour-name->display-name bonjour-name) " (" host ":" port ")" " ...\n"))
-         (when-not @socket
-           (connect repl-env))))
-     (.start (Thread. (bound-fn [] (event-loop repl-env))))
-     ;; create and start the watcher
-     (swap! state assoc :watcher
-       (doto
-         (apply watcher/create
-           ;; have to pass the processed opts
-           ;; the compiler one are the original ones
-           (bound-fn [e] (recompile repl-env e opts))
-           (:watch-dirs options))
-         (watcher/watch)))
-     ;; compile cljs.core & its dependencies, goog/base.js must be available
-     ;; for bootstrap to load, use new closure/compile as it can handle
-     ;; resources in JARs
-     (let [output-dir (io/file (:output-dir opts))
-           core (io/resource "cljs/core.cljs")
-           core-js (closure/compile core
-                     (assoc opts :output-file
-                                 (closure/src-file->target-file
-                                   core (dissoc opts :output-dir))))
-           deps (closure/add-dependencies opts core-js)
-           repl-deps (io/file output-dir "krell_repl_deps.js")]
-       ;; output unoptimized code and the deps file
-       ;; for all compiled namespaces
-       (apply closure/output-unoptimized
-         (assoc opts
-           :output-to (.getPath repl-deps)) deps)
-       (init-js-env repl-env opts)))))
+   (if-not (false? (:mdns options))
+     (let [[bonjour-name {:keys [host port] :as ep}] (mdns/discover (boolean (:choose-first options)))
+           host (mdns/local-address-if host)]
+       (swap! state merge {:host host :port port})
+       (println
+         (str "\nConnecting to " (mdns/bonjour-name->display-name bonjour-name) " (" host ":" port ")" " ...\n"))
+       (connect repl-env))
+     (.start
+       (Thread.
+         (bound-fn []
+           (let [port (:port options 5001)]
+             (println "\nWaiting for device connection on port" port)
+             (server-loop repl-env (net/create-server-socket port)))))))
+   (while (not @socket)
+     (Thread/sleep 500))
+   (.start (Thread. (bound-fn [] (event-loop repl-env))))
+   ;; create and start the watcher
+   (swap! state assoc :watcher
+     (doto
+       (apply watcher/create
+         ;; have to pass the processed opts
+         ;; the compiler one are the original ones
+         (bound-fn [e] (recompile repl-env e opts))
+         (:watch-dirs options))
+       (watcher/watch)))
+   ;; compile cljs.core & its dependencies, goog/base.js must be available
+   ;; for bootstrap to load, use new closure/compile as it can handle
+   ;; resources in JARs
+   (let [output-dir (io/file (:output-dir opts))
+         core       (io/resource "cljs/core.cljs")
+         core-js    (closure/compile core
+                      (assoc opts
+                        :output-file
+                        (closure/src-file->target-file
+                          core (dissoc opts :output-dir))))
+         deps       (closure/add-dependencies opts core-js)
+         repl-deps  (io/file output-dir "krell_repl_deps.js")]
+     ;; output unoptimized code and the deps file
+     ;; for all compiled namespaces
+     (apply closure/output-unoptimized
+       (assoc opts
+         :output-to (.getPath repl-deps)) deps)
+     (init-js-env repl-env opts))))
 
 (defn choose-first-opt
   [cfg value]
@@ -341,6 +343,10 @@
 (defn mdns-opt
   [cfg value]
   (assoc-in cfg [:repl-env-options :mdns] (= value "true")))
+
+(defn port-opt
+  [cfg value]
+  (assoc-in cfg [:repl-env-options :port] value))
 
 (defn krell-compile
   [repl-env {:keys [options] :as cfg}]
@@ -379,11 +385,11 @@
                      :init
                      {["-t" "--target"]
                       {:group ::cli/main&compile
-                       :fn (fn [cfg target]
-                             (assert (#{"node" "nodejs"} target) "Invalid --target, only nodejs supported")
-                             cfg)
-                       :arg "name"
-                       :doc (str "The JavaScript target. Supported values: node or nodejs.")}
+                       :fn    (fn [cfg target]
+                                (assert (#{"node" "nodejs"} target) "Invalid --target, only nodejs supported")
+                                cfg)
+                       :arg   "name"
+                       :doc   (str "The JavaScript target. Supported values: node or nodejs.")}
                       ["-f" "--choose-first"]
                       {:group ::cli/main
                        :fn    choose-first-opt
@@ -394,7 +400,12 @@
                        :fn    mdns-opt
                        :arg   "bool"
                        :doc   (str "Use mdns to discover devices. If set to false the target "
-                                   "will connect with hardcoded ip & port.")}}
+                                   "will connect with hardcoded ip & port.")}
+                      ["-p" "--port"]
+                      {:group ::cli/main
+                       :fn    port-opt
+                       :arg   "number"
+                       :doc   (str "When ---mdns is false, sets port for target clients to bind to.")}}
                      :main
                      {["-s" "--serve"]
                       {:fn (fn [cfg opt]
