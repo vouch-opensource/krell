@@ -1,6 +1,6 @@
 (ns krell.net
   (:require [clojure.java.io :as io])
-  (:import [java.io Reader BufferedReader BufferedWriter IOException]
+  (:import [java.io Reader Writer BufferedReader BufferedWriter IOException]
            [java.net Inet4Address NetworkInterface ServerSocket Socket]))
 
 (defn create-server-socket ^ServerSocket [port]
@@ -16,7 +16,7 @@
 
 (defn close-socket [s]
   (.close ^Reader (:in s))
-  (.close ^Reader (:out s))
+  (.close ^Writer (:out s))
   (.close ^Socket (:socket s)))
 
 (defn write [^BufferedWriter out ^String js]
