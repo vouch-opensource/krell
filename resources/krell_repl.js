@@ -18,16 +18,11 @@ var evaluate = eval;
 var libLoadListeners = {};
 var reloadListeners = [];
 var pendingLoads_ = [];
-var repub_ = 0;
 
 // =============================================================================
 // ZeroConf Service Publication / Discovery
 
 const zeroconf = new Zeroconf();
-
-var bonjourName = function() {
-    return "krell.repl" + getApplicationName() + " " + getDeviceId();
-};
 
 zeroconf.on("start", () => {
     console.log("Scan started");
@@ -44,29 +39,13 @@ zeroconf.on("found", name => {
 zeroconf.on("resolved", service => {
     console.log("Service resolved:", JSON.stringify(service));
     // TODO: do this only if not already connected
-    if(service.name.indexOf("Krell-REPL-Server") !== -1) {
+    if(!CONNECTED && (service.name.indexOf("Krell-REPL-Server") !== -1)) {
         SERVER_IP = service.addresses.find(x => x.match(IPV4));
         SERVER_PORT = service.port;
     }
 });
 
 zeroconf.scan("http", "tcp", "local.");
-
-var repubTimeout_ = function() {
-    if(repub_ < 10) {
-        repub_ = repub_ + 1;
-        return (250 * (2**repub_));
-    } else {
-        return 256000;
-    }
-};
-
-var publishReplService = function() {
-    zeroconf.publishService("http", "tcp", "local.", bonjourName(), REPL_PORT);
-    if(IS_ANDROID) {
-        setTimeout(publishReplService, repubTimeout_());
-    }
-};
 
 // =============================================================================
 // REPL Server
@@ -296,26 +275,13 @@ var initSocket = function(socket) {
     });
 
     socket.on("close", error => {
-        console.log("Closed connection with ", socket.address());
+        if (CONNECTED) {
+            console.log("Closed connection with ", socket.address());
+        }
         CONNECTED = false;
         setTimeout(tryConnection, RECONNECT_INTERVAL);
     });
 };
-
-// TODO: remove, we can use the Krell published service to know what
-// to connect to
-var server = TcpSocket.createServer(function (socket) {
-    socket.write("ready\0");
-    initSocket(socket);
-}).listen({port: REPL_PORT, host: "0.0.0.0"});
-
-server.on("error", error => {
-    console.log("An error ocurred with the server", error);
-});
-
-server.on("close", () => {
-    console.log("Server closed connection");
-});
 
 // Loop to connect from client to server
 var tryConnection = function() {
@@ -323,7 +289,7 @@ var tryConnection = function() {
         var socket = TcpSocket.createConnection({
             host: SERVER_IP,
             port: SERVER_PORT,
-            localAddress: "127.0.0.1",
+            localPort: IS_ANDROID ? REPL_PORT : undefined,
             tls: false
         }, function(address) {
             CONNECTED = true;
@@ -338,6 +304,5 @@ tryConnection();
 
 module.exports = {
     onSourceLoad: onSourceLoad,
-    onKrellReload: onKrellReload,
-    publishReplService: publishReplService
+    onKrellReload: onKrellReload
 };
