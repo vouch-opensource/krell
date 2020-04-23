@@ -9,47 +9,20 @@
             [clojure.data.json :as json]
             [clojure.java.io :as io]
             [clojure.string :as string]
-            [krell.assets :as assets]
             [krell.deps :as deps]
             [krell.gen :as gen]
             [krell.mdns :as mdns]
+            [krell.net :as net]
             [krell.passes :as passes]
             [krell.util :as util]
             [krell.watcher :as watcher])
   (:import [clojure.lang ExceptionInfo]
-           [java.io BufferedReader BufferedWriter File IOException]
-           [java.net Socket]
+           [java.io File IOException]
            [java.util.concurrent LinkedBlockingQueue TimeUnit]))
 
 (def eval-lock (Object.))
 (def results-queue (LinkedBlockingQueue.))
 (def load-queue (LinkedBlockingQueue.))
-
-(defn create-socket [^String host port]
-  (let [socket (Socket. host (int port))
-        in     (io/reader socket)
-        out    (io/writer socket)]
-    {:socket socket :in in :out out}))
-
-(defn close-socket [s]
-  (.close (:in s))
-  (.close (:out s))
-  (.close (:socket s)))
-
-(defn write [^BufferedWriter out ^String js]
-  (.write out js)
-  (.write out (int 0)) ;; terminator
-  (.flush out))
-
-(defn ^String read-response [^BufferedReader in]
-  (let [sb (StringBuilder.)]
-    (loop [sb sb c (.read in)]
-      (case c
-        -1 (throw (IOException. "Stream closed"))
-         0 (str sb)
-        (do
-          (.append sb (char c))
-          (recur sb (.read in)))))))
 
 (declare load-queued-files)
 
@@ -63,11 +36,12 @@
                 (:verbose (ana-api/get-options)))
        (println "Load file:" (:value client-req)))
      (let [{:keys [out]} @(:socket repl-env)]
-       (write out (json/write-str
-                    (merge {:type "eval" :form js}
-                      ;; if there was client driven request then pass on this
-                      ;; information back to the client
-                      (when client-req {:request client-req}))))
+       (net/write out
+         (json/write-str
+           (merge {:type "eval" :form js}
+             ;; if there was client driven request then pass on this
+             ;; information back to the client
+             (when client-req {:request client-req}))))
        ;; assume transfer won't be slower than 100K/s on a local network
        (let [ack (.poll results-queue
                    (max 1 (quot (count js) (* 100 1024))) TimeUnit/SECONDS)]
@@ -110,7 +84,7 @@
   [{:keys [state socket] :as repl-env}]
   (while (not (:done @state))
     (try
-      (let [res (read-response (:in @socket))]
+      (let [res (net/read-response (:in @socket))]
         (try
           (let [{:keys [type value] :as event}
                 (json/read-str res :key-fn keyword)]
@@ -216,11 +190,11 @@
         (when-not (= r "ready")
           (Thread/sleep 250)
           (try
-            (reset! socket (create-socket host port))
+            (reset! socket (net/create-socket host port))
             (catch Exception e
               (println e)))
           (if @socket
-            (recur (read-response (:in @socket)))
+            (recur (net/read-response (:in @socket)))
             (recur nil)))))))
 
 (defn reconnect [repl-env]
@@ -307,8 +281,14 @@
 (defn setup
   ([repl-env] (setup repl-env nil))
   ([{:keys [options state socket] :as repl-env} opts]
-   (let [[bonjour-name {:keys [host port] :as ep}]
-         (mdns/discover (boolean (:choose-first options)))
+   (let [
+         ;repl-service (mdns/jmdns)
+         ;repl-service-info (mdns/krell-service-info (+ 5000 (rand-int 1000)))
+         ;_ (future
+         ;    (while true
+         ;      (mdns/register-service repl-service repl-service-info)
+         ;      (Thread/sleep 1000)))
+         [bonjour-name {:keys [host port] :as ep}] (mdns/discover (boolean (:choose-first options)))
          host (mdns/local-address-if host)]
      (swap! state merge {:host host :port port})
      (println
@@ -419,8 +399,8 @@
         (watcher/stop w))
       (when (and (:socket sock)
                  (not (.isClosed (:socket sock))))
-        (write (:out sock) ":cljs/quit")
-        (close-socket sock)))))
+        (net/write (:out sock) ":cljs/quit")
+        (net/close-socket sock)))))
 
 (defn repl-env* [options]
   (KrellEnv.
