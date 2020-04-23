@@ -1,7 +1,7 @@
 (ns krell.net
   (:require [clojure.java.io :as io])
   (:import [java.io Reader BufferedReader BufferedWriter IOException]
-           [java.net ServerSocket Socket]))
+           [java.net Inet4Address NetworkInterface ServerSocket Socket]))
 
 (defn create-server-socket ^ServerSocket [port]
   (ServerSocket. port))
@@ -33,3 +33,14 @@
         (do
           (.append sb (char c))
           (recur sb (.read in)))))))
+
+(defn get-ip []
+  (-> (filter
+        (fn [ia]
+          (and (not (.isLinkLocalAddress ia))
+            (not (.isLoopbackAddress ia))
+            (instance? Inet4Address ia)))
+        (mapcat
+          (fn [ni] (enumeration-seq (.getInetAddresses ni)))
+          (enumeration-seq (NetworkInterface/getNetworkInterfaces))))
+    first (.getHostAddress)))
