@@ -278,6 +278,15 @@
                 " compilation failed with exception: "
                 (.getMessage t)))))))))
 
+(defn server-loop
+  [{:keys [socket] :as repl-env} server-socket]
+  (when-let [socket (try (.accept server-socket) (catch Throwable _))]
+    (.setKeepAlive socket true)
+    ;; NOTE: ignore new connections for now
+    (when-not @socket
+      (reset! socket (net/socket->socket-map socket)))
+    (recur repl-env server-socket)))
+
 (defn setup
   ([repl-env] (setup repl-env nil))
   ([{:keys [options state socket] :as repl-env} opts]
@@ -288,44 +297,50 @@
          ;    (while true
          ;      (mdns/register-service repl-service repl-service-info)
          ;      (Thread/sleep 1000)))
-         [bonjour-name {:keys [host port] :as ep}] (mdns/discover (boolean (:choose-first options)))
-         host (mdns/local-address-if host)]
-     (swap! state merge {:host host :port port})
-     (println
-       (str "\nConnecting to " (mdns/bonjour-name->display-name bonjour-name) " (" host ":" port ")" " ...\n"))
-     (when-not @socket
-       (connect repl-env)
-       (.start (Thread. (bound-fn [] (event-loop repl-env))))
-       ;; create and start the watcher
-       (swap! state assoc :watcher
-         (doto
-           (apply watcher/create
-             ;; have to pass the processed opts
-             ;; the compiler one are the original ones
-             (bound-fn [e] (recompile repl-env e opts))
-             (:watch-dirs options))
-           (watcher/watch)))
-       ;; compile cljs.core & its dependencies, goog/base.js must be available
-       ;; for bootstrap to load, use new closure/compile as it can handle
-       ;; resources in JARs
-       (let [output-dir (io/file (:output-dir opts))
-             core       (io/resource "cljs/core.cljs")
-             core-js    (closure/compile core
-                          (assoc opts :output-file
-                            (closure/src-file->target-file
-                              core (dissoc opts :output-dir))))
-             deps       (closure/add-dependencies opts core-js)
-             repl-deps  (io/file output-dir "krell_repl_deps.js")]
-         ;; output unoptimized code and the deps file
-         ;; for all compiled namespaces
-         (apply closure/output-unoptimized
-           (assoc opts
-             :output-to (.getPath repl-deps)) deps)
-         (init-js-env repl-env opts))))))
+         ]
+     (when-not (false? (:mdns options))
+       (let [[bonjour-name {:keys [host port] :as ep}] (mdns/discover (boolean (:choose-first options)))
+             host (mdns/local-address-if host)]
+         (swap! state merge {:host host :port port})
+         (println
+           (str "\nConnecting to " (mdns/bonjour-name->display-name bonjour-name) " (" host ":" port ")" " ...\n"))
+         (when-not @socket
+           (connect repl-env))))
+     (.start (Thread. (bound-fn [] (event-loop repl-env))))
+     ;; create and start the watcher
+     (swap! state assoc :watcher
+       (doto
+         (apply watcher/create
+           ;; have to pass the processed opts
+           ;; the compiler one are the original ones
+           (bound-fn [e] (recompile repl-env e opts))
+           (:watch-dirs options))
+         (watcher/watch)))
+     ;; compile cljs.core & its dependencies, goog/base.js must be available
+     ;; for bootstrap to load, use new closure/compile as it can handle
+     ;; resources in JARs
+     (let [output-dir (io/file (:output-dir opts))
+           core (io/resource "cljs/core.cljs")
+           core-js (closure/compile core
+                     (assoc opts :output-file
+                                 (closure/src-file->target-file
+                                   core (dissoc opts :output-dir))))
+           deps (closure/add-dependencies opts core-js)
+           repl-deps (io/file output-dir "krell_repl_deps.js")]
+       ;; output unoptimized code and the deps file
+       ;; for all compiled namespaces
+       (apply closure/output-unoptimized
+         (assoc opts
+           :output-to (.getPath repl-deps)) deps)
+       (init-js-env repl-env opts)))))
 
-(defn krell-choose-first-opt
+(defn choose-first-opt
   [cfg value]
   (assoc-in cfg [:repl-env-options :choose-first] (= value "true")))
+
+(defn mdns-opt
+  [cfg value]
+  (assoc-in cfg [:repl-env-options :mdns] (= value "true")))
 
 (defn krell-compile
   [repl-env {:keys [options] :as cfg}]
@@ -371,9 +386,15 @@
                        :doc (str "The JavaScript target. Supported values: node or nodejs.")}
                       ["-f" "--choose-first"]
                       {:group ::cli/main
-                       :fn krell-choose-first-opt
-                       :arg "bool"
-                       :doc (str "Choose the first discovered available REPL service.")}}
+                       :fn    choose-first-opt
+                       :arg   "bool"
+                       :doc   (str "Choose the first discovered available REPL service.")}
+                      ["--mdns"]
+                      {:group ::cli/main
+                       :fn    mdns-opt
+                       :arg   "bool"
+                       :doc   (str "Use mdns to discover devices. If set to false the target "
+                                   "will connect with hardcoded ip & port.")}}
                      :main
                      {["-s" "--serve"]
                       {:fn (fn [cfg opt]
