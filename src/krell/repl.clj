@@ -280,13 +280,13 @@
 
 (defn server-loop
   [{:keys [socket] :as repl-env} server-socket]
-  (when-let [socket (try (.accept server-socket) (catch Throwable _))]
-    (.setKeepAlive socket true)
+  (when-let [conn (try (.accept server-socket) (catch Throwable _))]
+    (.setKeepAlive conn true)
     ;; TODO: just ignoring new connections for now, maybe we want to do
     ;; something else? i.e. the current socket was closed because of a RN
     ;; reload
     (when-not @socket
-      (reset! socket (net/socket->socket-map socket)))
+      (reset! socket (net/socket->socket-map conn)))
     (recur repl-env server-socket)))
 
 (defn setup
@@ -299,11 +299,13 @@
        (println
          (str "\nConnecting to " (mdns/bonjour-name->display-name bonjour-name) " (" host ":" port ")" " ...\n"))
        (connect repl-env))
-     (.start
-       (Thread.
-         (bound-fn []
-           (let [port (:port options 5001)]
-             (println "\nWaiting for device connection on port" port)
+     (let [port (:port options 5001)]
+       (println "\nWaiting for device connection on port" port)
+       ;; TODO: put mdns into the state so we can cleanup in REPL teardown
+       (mdns/register-service (mdns/jmdns) (mdns/krell-service-info port))
+       (.start
+         (Thread.
+           (bound-fn []
              (server-loop repl-env (net/create-server-socket port)))))))
    (while (not @socket)
      (Thread/sleep 500))

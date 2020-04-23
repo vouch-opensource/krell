@@ -4,10 +4,16 @@ import { getApplicationName, getDeviceId, getSystemName } from 'react-native-dev
 import { npmDeps } from "./npm_deps.js";
 import { assets } from "./krell_assets.js";
 
+var CONNECTED = false;
+var IPV4 = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
+var RECONNECT_INTERVAL = 3000;
+
 var SERVER_IP = "$KRELL_SERVER_IP";
 var SERVER_PORT = $KRELL_SERVER_PORT;
+
 var IS_ANDROID = (getSystemName() === "Android");
 var REPL_PORT = IS_ANDROID ? 5003 : 5002;
+
 var evaluate = eval;
 var libLoadListeners = {};
 var reloadListeners = [];
@@ -37,6 +43,11 @@ zeroconf.on("found", name => {
 
 zeroconf.on("resolved", service => {
     console.log("Service resolved:", JSON.stringify(service));
+    // TODO: do this only if not already connected
+    if(service.name.indexOf("Krell-REPL-Server") !== -1) {
+        SERVER_IP = service.addresses.find(x => x.match(IPV4));
+        SERVER_PORT = service.port;
+    }
 });
 
 zeroconf.scan("http", "tcp", "local.");
@@ -191,6 +202,7 @@ var handleMessage = function(socket, data){
 
     if (data === ":cljs/quit") {
         socket.destroy();
+        CONNECTED = false;
         return;
     } else {
         try {
@@ -285,9 +297,13 @@ var initSocket = function(socket) {
 
     socket.on("close", error => {
         console.log("Closed connection with ", socket.address());
+        CONNECTED = false;
+        setTimeout(tryConnection, RECONNECT_INTERVAL);
     });
 };
 
+// TODO: remove, we can use the Krell published service to know what
+// to connect to
 var server = TcpSocket.createServer(function (socket) {
     socket.write("ready\0");
     initSocket(socket);
@@ -300,6 +316,25 @@ server.on("error", error => {
 server.on("close", () => {
     console.log("Server closed connection");
 });
+
+// Loop to connect from client to server
+var tryConnection = function() {
+    if(!CONNECTED) {
+        var socket = TcpSocket.createConnection({
+            host: SERVER_IP,
+            port: SERVER_PORT,
+            localAddress: "127.0.0.1",
+            tls: false
+        }, function(address) {
+            CONNECTED = true;
+        });
+        initSocket(socket);
+    } else {
+        setTimeout(tryConnection, RECONNECT_INTERVAL);
+    }
+};
+
+tryConnection();
 
 module.exports = {
     onSourceLoad: onSourceLoad,
