@@ -26,10 +26,10 @@
 
 (declare load-queued-files)
 
-(defn rn-eval*
+(defn rn-eval
   "Evaluate a JavaScript string in the React Native REPL"
   ([repl-env js]
-   (rn-eval* repl-env js nil))
+   (rn-eval repl-env js nil))
   ([{:keys [options] :as repl-env} js client-req]
    (locking eval-lock
      (when (and (= "load-file" (:type client-req))
@@ -46,7 +46,7 @@
        (let [ack (.poll results-queue
                    (max 1 (quot (count js) (* 100 1024))) TimeUnit/SECONDS)]
          (if (or (nil? ack) (not= "ack" (:type ack)))
-           (throw (ex-info "No ack" {:type :no-ack :queue-value ack}))
+           (throw (ex-info "Connection lost" {:type :no-ack :queue-value ack}))
            (let [result (.take results-queue)
                  ret (condp = (:status result)
                        "success"
@@ -179,15 +179,6 @@
                    (.stringify js/JSON)
                    (.write out))
                  (.write out "\0"))))))))))
-
-(defn rn-eval
-  ([repl-env js]
-   (rn-eval repl-env js nil))
-  ([repl-env js req]
-   (try
-     (rn-eval* repl-env js req)
-     (catch ExceptionInfo e
-       (throw e)))))
 
 (defn modified-source? [{:keys [type path]}]
   (or (= :modify type)
