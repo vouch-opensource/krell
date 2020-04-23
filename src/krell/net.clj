@@ -3,11 +3,16 @@
   (:import [java.io Reader BufferedReader BufferedWriter IOException]
            [java.net ServerSocket Socket]))
 
-(defn create-socket [^String host port]
-  (let [socket (Socket. host (int port))
-        in     (io/reader socket)
-        out    (io/writer socket)]
+(defn create-server-socket ^ServerSocket [port]
+  (ServerSocket. port))
+
+(defn socket->socket-map [socket]
+  (let [in  (io/reader socket)
+        out (io/writer socket)]
     {:socket socket :in in :out out}))
+
+(defn create-socket [^String host port]
+  (socket->socket-map (Socket. host (int port))))
 
 (defn close-socket [s]
   (.close ^Reader (:in s))
