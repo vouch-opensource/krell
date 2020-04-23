@@ -349,15 +349,15 @@
   (assoc-in cfg [:repl-env-options :port] value))
 
 (defn krell-compile
-  [repl-env {:keys [options] :as cfg}]
+  [repl-env-var {:keys [repl-env-options options] :as cfg}]
   (gen/write-index-js options)
-  (gen/write-repl-js options)
+  (gen/write-repl-js (apply repl-env-var repl-env-options) options)
   (let [opt-level (:optimizations options)
         state     (atom {})]
     (binding [passes/*state* state]
       (ana-api/with-passes
         (conj ana-api/default-passes passes/rewrite-asset-requires)
-        (cli/default-compile repl-env
+        (cli/default-compile repl-env-var
           (cond-> (assoc cfg :post-compile-fn #(gen/write-assets-js (:assets @state) options))
             (not (or (= :none opt-level) (nil? opt-level)))
             (assoc-in [:options :output-wrapper]
@@ -437,7 +437,8 @@
 (defn repl-env* [options]
   (KrellEnv.
     (merge
-      {:watch-dirs      ["src"]
+      {:port            5001
+       :watch-dirs      ["src"]
        :connect-timeout 30000
        :eval-timeout    30000}
       options)

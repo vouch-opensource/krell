@@ -3,6 +3,7 @@
             [clojure.java.io :as io]
             [clojure.string :as string]
             [krell.assets :as assets]
+            [krell.net :as net]
             [krell.util :as util]))
 
 (defn write-index-js
@@ -24,11 +25,13 @@
 
 (defn write-repl-js
   "Write out the REPL support code. See resources/krell_repl.js"
-  [opts]
+  [repl-env opts]
   (let [source   (slurp (io/resource "krell_repl.js"))
         out-file (io/file (:output-dir opts) "krell_repl.js")]
-    (util/mkdirs out-file)
-    (spit out-file source)))
+    (spit out-file
+      (-> source
+        (string/replace "$KRELL_SERVER_IP" (net/get-ip))
+        (string/replace "$KRELL_SERVER_PORT" (-> repl-env :options :port str))))))
 
 (defn write-assets-js
   "Write out the REPL asset support code."

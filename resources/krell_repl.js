@@ -4,6 +4,8 @@ import { getApplicationName, getDeviceId, getSystemName } from 'react-native-dev
 import { npmDeps } from "./npm_deps.js";
 import { assets } from "./krell_assets.js";
 
+var SERVER_IP = "$KRELL_SERVER_IP";
+var SERVER_PORT = $KRELL_SERVER_PORT;
 var IS_ANDROID = (getSystemName() === "Android");
 var REPL_PORT = IS_ANDROID ? 5003 : 5002;
 var evaluate = eval;
