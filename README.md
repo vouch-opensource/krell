@@ -65,13 +65,6 @@ Ensure that you have the following permissions set in your `AndroidManifest.xml`
 
 ## REPL
 
-If you'd like to connect to Android you need to setup network forwarding with
-`adb`:
-
-```
-adb forward tcp:5003 tcp:5003
-```
-
 Starting a REPL:
 
 ```

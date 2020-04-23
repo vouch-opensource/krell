@@ -292,21 +292,14 @@
 (defn setup
   ([repl-env] (setup repl-env nil))
   ([{:keys [options state socket] :as repl-env} opts]
-   (if-not (false? (:mdns options))
-     (let [[bonjour-name {:keys [host port] :as ep}] (mdns/discover (boolean (:choose-first options)))
-           host (mdns/local-address-if host)]
-       (swap! state merge {:host host :port port})
-       (println
-         (str "\nConnecting to " (mdns/bonjour-name->display-name bonjour-name) " (" host ":" port ")" " ...\n"))
-       (connect repl-env))
-     (let [port (:port options 5001)]
-       (println "\nWaiting for device connection on port" port)
-       ;; TODO: put mdns into the state so we can cleanup in REPL teardown
-       (mdns/register-service (mdns/jmdns) (mdns/krell-service-info port))
-       (.start
-         (Thread.
-           (bound-fn []
-             (server-loop repl-env (net/create-server-socket port)))))))
+   (let [port (:port options)]
+     (println "\nWaiting for device connection on port" port)
+     ;; TODO: put mdns into the state so we can cleanup in REPL teardown
+     (mdns/register-service (mdns/jmdns) (mdns/krell-service-info port))
+     (.start
+       (Thread.
+         (bound-fn []
+           (server-loop repl-env (net/create-server-socket port))))))
    (while (not @socket)
      (Thread/sleep 500))
    (.start (Thread. (bound-fn [] (event-loop repl-env))))
@@ -341,10 +334,6 @@
 (defn choose-first-opt
   [cfg value]
   (assoc-in cfg [:repl-env-options :choose-first] (= value "true")))
-
-(defn mdns-opt
-  [cfg value]
-  (assoc-in cfg [:repl-env-options :mdns] (= value "true")))
 
 (defn port-opt
   [cfg value]
@@ -397,12 +386,6 @@
                        :fn    choose-first-opt
                        :arg   "bool"
                        :doc   (str "Choose the first discovered available REPL service.")}
-                      ["--mdns"]
-                      {:group ::cli/main
-                       :fn    mdns-opt
-                       :arg   "bool"
-                       :doc   (str "Use mdns to discover devices. If set to false the target "
-                                   "will connect with hardcoded ip & port.")}
                       ["-p" "--port"]
                       {:group ::cli/main
                        :fn    port-opt
