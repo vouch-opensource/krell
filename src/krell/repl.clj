@@ -99,7 +99,7 @@
             (.write *out* res 0 (.length res))
             (.flush *out*))))
       (catch IOException e
-        ;; sleep a bit, no need to spin while we wait for a reconnect
+        ;; TODO: we should probably log something here
         (Thread/sleep 500)))))
 
 (defn base-loaded? [repl-env]
@@ -180,30 +180,6 @@
                    (.write out))
                  (.write out "\0"))))))))))
 
-(defn connect [{:keys [options socket state] :as repl-env}]
-  (let [start (util/now)
-        {:keys [host port]} @state]
-    (loop [r nil]
-      (if (< (:connect-timeout options) (util/elapsed start))
-        (throw
-          (ex-info "Could not connect Krell REPL" {}))
-        (when-not (= r "ready")
-          (Thread/sleep 250)
-          (try
-            (reset! socket (net/create-socket host port))
-            (catch Exception e
-              (println e)))
-          (if @socket
-            (recur (net/read-response (:in @socket)))
-            (recur nil)))))))
-
-(defn reconnect [repl-env]
-  ;; clear anything pending in the queues
-  (.clear load-queue)
-  (.clear results-queue)
-  (connect repl-env)
-  (init-js-env repl-env))
-
 (defn rn-eval
   ([repl-env js]
    (rn-eval repl-env js nil))
@@ -211,12 +187,7 @@
    (try
      (rn-eval* repl-env js req)
      (catch ExceptionInfo e
-       (if (= :no-ack (:type (ex-data e)))
-         (do
-           (reconnect repl-env)
-           {:status :exception
-            :value  "Connection was reset by React Native"})
-         (throw e))))))
+       (throw e)))))
 
 (defn modified-source? [{:keys [type path]}]
   (or (= :modify type)
