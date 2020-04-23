@@ -29,6 +29,10 @@ zeroconf.on("stop", () => {
     console.log("Scan stopped");
 });
 
+zeroconf.on("found", name => {
+    console.log("Service found:", JSON.stringify(name));
+});
+
 zeroconf.on("resolved", service => {
     console.log("Service resolved:", JSON.stringify(service));
 });
