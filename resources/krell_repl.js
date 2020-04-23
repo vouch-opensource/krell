@@ -253,13 +253,10 @@ var handleMessage = function(socket, data){
     }
 };
 
-var server = TcpSocket.createServer(function (socket) {
+var initSocket = function(socket) {
     var buffer = "";
-
     // it doesn't matter which socket we use for loads
     loadFileSocket = socket;
-
-    socket.write("ready\0");
 
     socket.on("data", data => {
         if (data[data.length - 1] !== 0) {
@@ -289,6 +286,11 @@ var server = TcpSocket.createServer(function (socket) {
     socket.on("close", error => {
         console.log("Closed connection with ", socket.address());
     });
+};
+
+var server = TcpSocket.createServer(function (socket) {
+    socket.write("ready\0");
+    initSocket(socket);
 }).listen({port: REPL_PORT, host: "0.0.0.0"});
 
 server.on("error", error => {
