@@ -15,9 +15,9 @@
   (socket->socket-map (Socket. host (int port))))
 
 (defn close-socket [s]
-  (.close ^Reader (:in s))
-  (.close ^Writer (:out s))
-  (.close ^Socket (:socket s)))
+  (.close (:in s))
+  (.close (:out s))
+  (.close (:socket s)))
 
 (defn write [^BufferedWriter out ^String js]
   (.write out js)
