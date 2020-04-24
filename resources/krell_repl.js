@@ -179,33 +179,27 @@ var handleMessage = function(socket, data){
 
     data = data.replace(/\0/g, "");
 
-    if (data === ":cljs/quit") {
-        socket.destroy();
-        CONNECTED = false;
-        return;
-    } else {
-        try {
-            var obj = JSON.parse(data);
-            req = obj.request;
-            ret = evaluate(obj.form);
-            // output forwarding
-            if(typeof ret == "function") {
-                if(ret.name === "cljs$user$redirect_output") {
-                    ret(socket);
-                }
+    try {
+        var obj = JSON.parse(data);
+        req = obj.request;
+        ret = evaluate(obj.form);
+        // output forwarding
+        if (typeof ret == "function") {
+            if (ret.name === "cljs$user$redirect_output") {
+                ret(socket);
             }
-            /*
-            if(req && req.type === "load-file") {
-                console.log("LOAD FILE:", req.value);
-            }
-            */
-            if(pendingLoads_.length > 0) {
-                flushLoads_(socket);
-            }
-        } catch (e) {
-            console.error(e, obj.form);
-            err = e;
         }
+        /*
+        if(req && req.type === "load-file") {
+            console.log("LOAD FILE:", req.value);
+        }
+        */
+        if (pendingLoads_.length > 0) {
+            flushLoads_(socket);
+        }
+    } catch (e) {
+        console.error(e, obj.form);
+        err = e;
     }
 
     if (err) {
