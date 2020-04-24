@@ -239,7 +239,7 @@
                 (.getMessage t)))))))))
 
 (defn server-loop
-  [{:keys [socket] :as repl-env} server-socket]
+  [{:keys [socket state] :as repl-env} server-socket]
   (when-let [conn (try (.accept server-socket) (catch Throwable _))]
     (.setKeepAlive conn true)
     ;; TODO: just ignoring new connections for now, maybe we want to do
@@ -247,7 +247,8 @@
     ;; reload
     (when-not @socket
       (reset! socket (net/socket->socket-map conn)))
-    (recur repl-env server-socket)))
+    (when-not (:done @state)
+      (recur repl-env server-socket))))
 
 (defn setup
   ([repl-env] (setup repl-env nil))
