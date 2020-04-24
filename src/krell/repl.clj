@@ -1,5 +1,6 @@
 (ns krell.repl
-  (:require [cljs.analyzer.api :as ana-api]
+  (:require [cljs.analyzer :as ana]
+            [cljs.analyzer.api :as ana-api]
             [cljs.build.api :as build-api]
             [cljs.cli :as cli]
             [cljs.closure :as closure]
@@ -185,9 +186,10 @@
 
 (defn collecting-warning-handler [state]
   (fn [warn-type env info]
-    (let [msg (str (ana-api/warning-message warn-type info)
-                (when-let [line (:line env)] (str " at line " line)))]
-      (swap! state conj msg))))
+    (when (warn-type (ana-api/enabled-warnings))
+      (let [msg (str (ana-api/warning-message warn-type info)
+                  (when-let [line (:line env)] (str " at line " line)))]
+        (swap! state conj msg)))))
 
 (defn warn-client [repl-env s]
   (rn-eval repl-env (str "console.warn(" (pr-str s) ")")))
