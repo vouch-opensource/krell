@@ -375,10 +375,12 @@
       (swap! state assoc :done true)
       (when-let [w (:watcher @state)]
         (watcher/stop w))
-      (when (and (:socket sock)
-                 (not (.isClosed (:socket sock))))
-        (net/write (:out sock) ":cljs/quit")
-        (net/close-socket sock)))))
+      ;; the socket might have been destroyed by a RN refresh so do this
+      ;; off the main thread
+      (future
+        (when (and (:socket sock)
+                   (not (.isClosed (:socket sock))))
+          (net/close-socket sock))))))
 
 (defn repl-env* [options]
   (KrellEnv.
