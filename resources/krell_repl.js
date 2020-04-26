@@ -189,11 +189,11 @@ var handleMessage = function(socket, data){
                 ret(socket);
             }
         }
-        /*
         if(req && req.type === "load-file") {
-            console.log("LOAD FILE:", req.value);
+            if(typeof goog !== "undefined") {
+                goog.debugLoader_.written_[req.value] = true;
+            }
         }
-        */
         if (pendingLoads_.length > 0) {
             flushLoads_(socket);
         }
