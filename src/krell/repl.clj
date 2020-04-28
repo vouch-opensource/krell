@@ -218,7 +218,7 @@
           (ana-api/with-warning-handlers [handler]
             (ana-api/with-passes
               ;; TODO: touch index.js? or do something else?
-              (conj ana-api/default-passes passes/rewrite-asset-requires)
+              (into ana-api/default-passes passes/custom-passes)
               (comp-api/compile-file state
                 (:source-file ns-info)
                 (build-api/target-file-for-cljs-ns
@@ -310,7 +310,7 @@
         state     (atom {})]
     (binding [passes/*state* state]
       (ana-api/with-passes
-        (conj ana-api/default-passes passes/rewrite-asset-requires)
+        (into ana-api/default-passes passes/custom-passes)
         (cli/default-compile repl-env-var
           (cond-> (assoc cfg :post-compile-fn #(gen/write-assets-js (:assets @state) options))
             (not (or (= :none opt-level) (nil? opt-level)))

@@ -1,5 +1,6 @@
 (ns krell.passes
   (:require [cljs.analyzer :as ana]
+            [cljs.analyzer.api :as ana-api]
             [clojure.java.io :as io]
             [clojure.string :as string]
             [krell.assets :as assets]
@@ -14,10 +15,16 @@
   (and (not (nil? (util/file-ext s)))
        (not (assets/js? s))))
 
-(defn js-require-asset? [ast]
+(defn lib? [s]
+  (not (asset? s)))
+
+(defn js-require? [ast]
   (and (= :invoke (:op ast))
        (= 'js/require (-> ast :fn :name))
-       (= :const (-> ast :args first :op))
+       (= :const (-> ast :args first :op))))
+
+(defn js-require-asset? [ast]
+  (and (js-require? ast)
        (asset? (-> ast :args first :val))))
 
 (defn update-require-path [ast new-path]
@@ -39,3 +46,15 @@
         (swap! *state* update :assets (fnil conj #{}) new-path))
       (update-require-path ast new-path))
     ast))
+
+(defn js-require-lib? [ast]
+  (and (js-require? ast)
+       (lib? (-> ast :args first :val))))
+
+(defn collect-lib-requires [env ast opts]
+  (when (js-require-lib? ast)
+    (let [lib (-> ast :args first :val)]
+      (swap! (ana-api/current-state) update :node-module-index conj lib)))
+  ast)
+
+(def custom-passes [rewrite-asset-requires collect-lib-requires])
