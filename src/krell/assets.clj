@@ -2,6 +2,9 @@
   (:require [clojure.string :as string]
             [krell.util :as util]))
 
+(defn js? [f]
+  (#{".js"} (util/file-ext f)))
+
 (defn clojure? [f]
   (#{".clj" ".cljc" ".cljs"} (util/file-ext f)))
 

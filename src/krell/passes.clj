@@ -12,7 +12,7 @@
 
 (defn asset? [s]
   (and (not (nil? (util/file-ext s)))
-       (not (assets/clojure? s))))
+       (not (assets/js? s))))
 
 (defn js-require-asset? [ast]
   (and (= :invoke (:op ast))
