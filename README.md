@@ -64,16 +64,22 @@ Ensure that you have the following permissions set in your `AndroidManifest.xml`
 
 ## REPL
 
-Starting a REPL:
+First build your project:
+
+```
+clj -m krell.main -v -co build.edn -c
+```
+
+Start a REPL:
 
 ```
 clj -m krell.main -co build.edn -r
 ```
 
-## Production Build
+You can of course combine these steps just as with plain `cljs.main`:
 
 ```
-clj -m krell.main -O advanced -co build.edn -c
+clj -m krell.main -co build.edn -c -r
 ```
 
 ## Examples
