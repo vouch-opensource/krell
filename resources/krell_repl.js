@@ -199,6 +199,9 @@ var handleMessage = function(socket, data){
         }
     } catch (e) {
         console.error(e, obj.form);
+        if(req && req.type === "load-file") {
+            console.log("Failed to load file:", req.value);
+        }
         err = e;
     }
 
