@@ -306,14 +306,18 @@
   (gen/write-repl-js (apply repl-env-var repl-env-options) options)
   (let [opt-level (:optimizations options)
         state     (atom {})]
-    (binding [passes/*state* state]
-      (ana-api/with-passes
-        (into ana-api/default-passes passes/custom-passes)
-        (cli/default-compile repl-env-var
-          (cond-> (assoc cfg :post-compile-fn #(gen/write-assets-js (:assets @state) options))
-            (not (or (= :none opt-level) (nil? opt-level)))
-            (assoc-in [:options :output-wrapper]
-              (fn [source] (str source (gen/krell-main-js options))))))))))
+    (ana-api/with-passes
+      (into ana-api/default-passes passes/custom-passes)
+      (cli/default-compile repl-env-var
+        (cond->
+          (assoc cfg
+            :post-compile-fn
+            #(let [state @(ana-api/current-state)]
+               (gen/write-assets-js (passes/all-assets state) options)
+               (gen/write-krell-npm-deps-js (passes/all-requires state) options)))
+          (not (or (= :none opt-level) (nil? opt-level)))
+          (assoc-in [:options :output-wrapper]
+            (fn [source] (str source (gen/krell-main-js options)))))))))
 
 (defrecord KrellEnv [options socket state]
   repl/IReplEnvOptions

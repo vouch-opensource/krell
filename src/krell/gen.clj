@@ -42,6 +42,25 @@
     (util/mkdirs out-file)
     (spit out-file (assets/assets-js assets))))
 
+(defn export-dep [dep]
+  (str "\""dep "\": require('" dep "')" ))
+
+(defn krell-npm-deps-js
+  "Returns the JavaScript code to support runtime require of bundled modules."
+  [node-requires]
+  (str
+    "module.exports = {\n"
+    "  krellNpmDeps: {\n"
+    (string/join ",\n" (map (comp #(str "    " %) export-dep) node-requires))
+    "  }\n"
+    "};\n"))
+
+(defn write-krell-npm-deps-js
+  [node-requires opts]
+  (let [out-file (io/file (:output-dir opts) "krell_npm_deps.js")]
+    (util/mkdirs out-file)
+    (spit out-file (krell-npm-deps-js node-requires))))
+
 (defn goog-require-str [sym]
   (str "goog.require(\"" (comp-api/munge sym) "\");"))
 
