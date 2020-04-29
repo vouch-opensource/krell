@@ -1,6 +1,5 @@
 (ns krell.repl
-  (:require [cljs.analyzer :as ana]
-            [cljs.analyzer.api :as ana-api]
+  (:require [cljs.analyzer.api :as ana-api]
             [cljs.build.api :as build-api]
             [cljs.cli :as cli]
             [cljs.closure :as closure]
@@ -17,8 +16,7 @@
             [krell.passes :as passes]
             [krell.util :as util]
             [krell.watcher :as watcher])
-  (:import [clojure.lang ExceptionInfo]
-           [java.io File IOException]
+  (:import [java.io File IOException]
            [java.util.concurrent LinkedBlockingQueue TimeUnit]))
 
 (def eval-lock (Object.))
