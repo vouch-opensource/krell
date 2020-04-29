@@ -1,6 +1,5 @@
 (ns krell.passes
-  (:require [cljs.analyzer :as ana]
-            [cljs.analyzer.api :as ana-api]
+  (:require [cljs.analyzer.api :as ana-api]
             [clojure.java.io :as io]
             [clojure.string :as string]
             [krell.assets :as assets]
@@ -40,7 +39,7 @@
                 (.getAbsoluteFile (io/file (:output-dir opts)))
                 (.getAbsoluteFile
                   (io/file
-                    (.getParentFile (io/file ana/*cljs-file*))
+                    (.getParentFile (io/file (ana-api/current-file)))
                     (normalize (-> ast :args first :val)))))))]
       (when *state*
         (swap! *state* update :assets (fnil conj #{}) new-path))
