@@ -1,9 +1,12 @@
 (ns krell.passes
-  (:require [cljs.analyzer.api :as ana-api]
+  (:require [cljs.analyzer :as ana]
+            [cljs.analyzer.api :as ana-api]
             [clojure.java.io :as io]
             [clojure.string :as string]
             [krell.assets :as assets]
             [krell.util :as util]))
+
+(def ^:dynamic *nses-with-requires* nil)
 
 (defn normalize [s]
   (cond-> s (string/starts-with? s "./") (subs 2)))
@@ -38,9 +41,12 @@
                 (.getAbsoluteFile
                   (io/file
                     (.getParentFile (io/file (ana-api/current-file)))
-                    (normalize (-> ast :args first :val)))))))]
+                    (normalize (-> ast :args first :val)))))))
+          cur-ns (ana-api/current-ns)]
+      (when *nses-with-requires*
+        (swap! *nses-with-requires* conj cur-ns))
       (swap! (ana-api/current-state) update-in
-        [::ana/namespaces (ana-api/current-ns) ::assets] (fnil conj #{}) new-path)
+        [::ana/namespaces cur-ns ::assets] (fnil conj #{}) new-path)
       (update-require-path ast new-path))
     ast))
 
@@ -50,9 +56,12 @@
 
 (defn collect-lib-requires [env ast opts]
   (when (js-require-lib? ast)
-    (let [lib (-> ast :args first :val)]
+    (let [lib (-> ast :args first :val)
+          cur-ns (ana-api/current-ns)]
+      (when *nses-with-requires*
+        (swap! *nses-with-requires* conj cur-ns))
       (swap! (ana-api/current-state) update-in
-        [::ana/namespaces (ana-api/current-ns) ::requires] (fnil conj #{}) lib)))
+        [::ana/namespaces cur-ns ::requires] (fnil conj #{}) lib)))
   ast)
 
 (defn all-assets [state]
