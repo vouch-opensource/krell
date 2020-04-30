@@ -42,6 +42,7 @@ class KrellRoot extends React.Component {
             krell.setState({root: appRoot, loaded: true});
         });
         onKrellReload(() => {
+            console.log("KRELL RELOAD");
             krell.setState((state, props) => {
                 return {
                     loaded: state.loaded,
