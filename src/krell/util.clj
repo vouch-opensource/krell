@@ -1,4 +1,7 @@
 (ns krell.util
+  (:require [cljs.build.api :as build-api]
+            [clojure.java.io :as io]
+            [clojure.string :as string])
   (:import [java.io File]
            [java.net URL]
            [java.nio.file Path]))
@@ -58,3 +61,7 @@
   "Create all parent directories for the passed file."
   [^File f]
   (.mkdirs (.getParentFile (.getCanonicalFile f))))
+
+(defn ns->cache-file [ns {:keys [output-dir] :as opts}]
+  (let [f (build-api/target-file-for-cljs-ns ns output-dir)]
+    (io/file (str (string/replace (.getPath f) #".js$" "") ".cljs.cache.json"))))
