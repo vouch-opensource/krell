@@ -76,8 +76,3 @@
       (string/replace "$KRELL_MAIN_NS" (str (munge (:main opts))))
       (string/replace "$CLJS_PRELOADS"
         (string/join "\n" (map goog-require-str (:preloads opts)))))))
-
-(defn write-krell-requires-edn [nses opts]
-  (let [out-file (io/file (:output-dir opts) "krell_requires.edn")]
-    (util/mkdirs out-file)
-    (spit out-file (pr-str nses))))

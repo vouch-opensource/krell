@@ -304,8 +304,7 @@
   [repl-env-var {:keys [repl-env-options options] :as cfg}]
   (gen/write-index-js options)
   (gen/write-repl-js (apply repl-env-var repl-env-options) options)
-  (let [opt-level (:optimizations options)
-        state     (atom {})]
+  (let [opt-level (:optimizations options)]
     (ana-api/with-passes
       (into ana-api/default-passes passes/custom-passes)
       (binding [passes/*nses-with-requires* (atom #{})]
@@ -313,10 +312,10 @@
           (cond->
             (assoc cfg
               :post-compile-fn
-              #(let [state @(ana-api/current-state)]
-                 (gen/write-krell-requires-edn @passes/*nses-with-requires* options)
-                 (gen/write-assets-js (passes/all-assets state) options)
-                 (gen/write-krell-npm-deps-js (passes/all-requires state) options)))
+              #(let [nses (passes/cache-krell-requires @passes/*nses-with-requires* options)
+                     analysis (passes/load-analysis nses options)]
+                 (gen/write-assets-js (passes/all-assets analysis) options)
+                 (gen/write-krell-npm-deps-js (passes/all-requires analysis) options)))
             (not (or (= :none opt-level) (nil? opt-level)))
             (assoc-in [:options :output-wrapper]
               (fn [source] (str source (gen/krell-main-js options))))))))))
