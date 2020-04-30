@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import TcpSocket from "react-native-tcp-socket";
 import Zeroconf from "react-native-zeroconf";
 import { npmDeps } from "./npm_deps.js";
+import { krellNpmDeps } from "./krell_npm_deps.js";
 import { assets } from "./krell_assets.js";
 
 var CONNECTED = false;
@@ -131,7 +132,7 @@ global.CLOSURE_IMPORT_SCRIPT = function(path, optContents) {
 };
 
 global.require = function(x) {
-    return npmDeps[x] || assets[x];
+    return npmDeps[x] || krellNpmDeps[x] || assets[x];
 };
 
 var notifyListeners = function(request) {
