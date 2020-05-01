@@ -177,10 +177,13 @@
                    (.write out))
                  (.write out "\0"))))))))))
 
-(defn modified-source? [{:keys [type path]}]
+(defn modified-source?
+  [{:keys [file-index] :as repl-env} {:keys [type path]}]
   (or (= :modify type)
       (and (= :create type)
-           (not (.isDirectory (util/to-file path))))))
+           (let [f (.getAbsoluteFile (util/to-file path))]
+             (and (not (.isDirectory f))
+                  (< (get file-index f) (util/last-modified f)))))))
 
 (defn collecting-warning-handler [state]
   (fn [warn-type env info]
@@ -198,8 +201,8 @@
   [repl-env {:keys [path] :as evt} opts]
   (let [src      (util/to-file path)
         path-str (.getPath src)]
-    (when (and (modified-source? evt)
-            (#{".cljc" ".cljs"} (subs path-str (.lastIndexOf path-str "."))))
+    (when (and (modified-source? repl-env evt)
+               (#{".cljc" ".cljs"} (subs path-str (.lastIndexOf path-str "."))))
       (let [state   (ana-api/current-state)
             ns-info (ana-api/parse-ns src)
             dest    (build-api/target-file-for-cljs-ns
@@ -320,7 +323,7 @@
             (assoc-in [:options :output-wrapper]
               (fn [source] (str source (gen/krell-main-js options))))))))))
 
-(defrecord KrellEnv [options socket state]
+(defrecord KrellEnv [options file-index socket state]
   repl/IReplEnvOptions
   (-repl-options [this]
     {
@@ -387,15 +390,23 @@
                    (not (.isClosed (:socket sock))))
           (net/close-socket sock))))))
 
+(defn file-index [dirs]
+  (reduce
+    (fn [ret ^File f]
+      (assoc ret (.getAbsoluteFile f) (util/last-modified f)))
+    {} (mapcat (comp util/files-seq io/file) dirs)))
+
 (defn repl-env* [options]
-  (KrellEnv.
-    (merge
-      {:port            5001
-       :watch-dirs      ["src"]
-       :connect-timeout 30000
-       :eval-timeout    30000}
-      options)
-    (atom nil) (atom nil)))
+  (let [watch-dirs (:watch-dirs options ["src"])
+        index      (file-index watch-dirs)]
+    (KrellEnv.
+      (merge
+        {:port            5001
+         :watch-dirs      watch-dirs
+         :connect-timeout 30000
+         :eval-timeout    30000}
+        options)
+      index (atom nil) (atom nil))))
 
 (defn repl-env
   "Construct a React Native evaluation environment."

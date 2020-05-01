@@ -236,6 +236,7 @@ var handleMessage = function(socket, data){
         if (req) {
             notifyListeners(req);
             if(req.reload) {
+                console.log(req);
                 notifyReloadListeners();
             }
         }

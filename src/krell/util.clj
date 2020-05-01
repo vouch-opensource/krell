@@ -57,6 +57,14 @@
     (let [idx (.lastIndexOf path ".")]
       (when (pos? idx) (subs path idx)))))
 
+(defn files-seq [dir]
+  (tree-seq
+    (fn [^File f]
+      (. f (isDirectory)))
+    (fn [^File d]
+      (seq (. d (listFiles))))
+    dir))
+
 (defn mkdirs
   "Create all parent directories for the passed file."
   [^File f]
