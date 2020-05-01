@@ -303,6 +303,11 @@
   [cfg value]
   (assoc-in cfg [:repl-env-options :port] value))
 
+(defn watch-dirs-opt
+  [cfg value]
+  (assoc-in cfg [:repl-env-options :watch-dirs]
+    (into [] (string/split value (re-pattern (str File/pathSeparatorChar))))))
+
 (defn krell-compile
   [repl-env-var {:keys [repl-env-options options] :as cfg}]
   (gen/write-index-js options)
@@ -355,6 +360,11 @@
                        :fn    choose-first-opt
                        :arg   "bool"
                        :doc   (str "Choose the first discovered available REPL service.")}
+                      ["-wd" "--watch-dirs"]
+                      {:group ::cli/main
+                       :fn    watch-dirs-opt
+                       :arg   "files"
+                       :doc   (str "A platform separated list of directories to watch for REPL hot-reloading")}
                       ["-p" "--port"]
                       {:group ::cli/main
                        :fn    port-opt
