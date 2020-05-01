@@ -82,6 +82,20 @@ You can of course combine these steps just as with plain `cljs.main`:
 clj -m krell.main -co build.edn -c -r
 ```
 
+## Assets & Arbitrary Node Library Requires
+
+Krell supports arbitrary `js/require` of assets and Node.js dependencies. The
+asset support is intended to align with React Native's own documentation - you
+must use static relative paths. The additional support for Node.js dependencies
+is useful when transitioning away from re-natal to Krell.
+
+It's important to note that adding a new asset or new Node library requires
+restarting the REPL.
+
+Other than that there are no other limitations. The handling of `js/require` is
+implemented as an analyzer pass so if you want to create macros to generate
+asset requires that will work.
+
 ## Examples
 
 See the [Reagent example tutorial](https://github.com/vouchio/krell/wiki/Reagent-Tutorial) 
