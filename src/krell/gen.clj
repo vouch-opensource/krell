@@ -1,5 +1,6 @@
 (ns krell.gen
   (:require [cljs.compiler.api :as comp-api]
+            [clojure.data.json :as json]
             [clojure.java.io :as io]
             [clojure.string :as string]
             [krell.assets :as assets]
@@ -74,5 +75,6 @@
                    (io/resource "main.prod.js")))]
     (-> source
       (string/replace "$KRELL_MAIN_NS" (str (munge (:main opts))))
+      (string/replace "$CLOSURE_DEFINES" (json/write-str (:closure-defines opts)))
       (string/replace "$CLJS_PRELOADS"
         (string/join "\n" (map goog-require-str (:preloads opts)))))))
