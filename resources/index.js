@@ -33,7 +33,7 @@ class KrellRoot extends React.Component {
                 </View>
             );
         }
-        return this.state.root();
+        return this.state.root(this.props);
     }
 
     componentDidMount() {
