@@ -310,7 +310,7 @@
 
 (defn recompile-opt
   [cfg value]
-  (assoc-in cfg [:repl-env-options :recomplie] (keyword value)))
+  (assoc-in cfg [:repl-env-options :recompile] (keyword value)))
 
 (defn watch-dirs-opt
   [cfg value]
@@ -429,7 +429,8 @@
         {:port            5001
          :watch-dirs      watch-dirs
          :connect-timeout 30000
-         :eval-timeout    30000}
+         :eval-timeout    30000
+         :recompile       :direct}
         options)
       index (atom nil) (atom nil))))
 
