@@ -205,35 +205,40 @@
                (#{".cljc" ".cljs"} (subs path-str (.lastIndexOf path-str "."))))
       (let [state   (ana-api/current-state)
             ns-info (ana-api/parse-ns src)
-            dest    (build-api/target-file-for-cljs-ns
-                      (:ns ns-info) (:output-dir opts))
-            warns   (atom [])
-            handler (collecting-warning-handler warns)]
+            the-ns  (:ns ns-info)
+            ancs    (deps/dependents the-ns
+                      (deps/deps->graph (deps/all-deps state the-ns opts))
+                      (-> repl-env :options :recompile))]
         (try
-          ;; we need to compute js deps so that requires from node_modules
-          ;; won't fail
+          ;; we need to compute js deps so that requires from node_modules won't fail
           (build-api/handle-js-modules state
             (build-api/dependency-order
-              (build-api/add-dependency-sources [ns-info] opts))
+              (build-api/add-dependency-sources
+                (concat [ns-info] ancs) opts))
             opts)
-          (ana-api/with-warning-handlers [handler]
-            (ana-api/with-passes
-              ;; TODO: touch index.js? or do something else?
-              (into ana-api/default-passes passes/custom-passes)
-              (comp-api/compile-file state
-                (:source-file ns-info)
-                (build-api/target-file-for-cljs-ns
-                  (:ns ns-info) (:output-dir opts)) opts)))
-          (if (empty? @warns)
-            (rn-eval repl-env (slurp dest)
-              {:type   "load-file"
-               :reload true
-               :value  (.getPath src)})
-            ;; TODO: it may be that warns strings have chars that will break
-            ;; console.warn ?
-            (let [pre (str "Could not reload " (:ns ns-info) ":")]
-              (warn-client repl-env
-                (string/join "\n" (concat [pre] @warns)))))
+          (loop [xs (concat [ns-info] ancs)]
+            (when-let [ijs (first xs)]
+              (let [warns   (atom [])
+                    handler (collecting-warning-handler warns)
+                    dest    (build-api/target-file-for-cljs-ns
+                              (:ns ijs) (:output-dir opts))]
+                (ana-api/with-warning-handlers [handler]
+                  (ana-api/with-passes
+                    (into ana-api/default-passes passes/custom-passes)
+                    (comp-api/compile-file state
+                      (:source-file ijs)
+                      (build-api/target-file-for-cljs-ns
+                        (:ns ijs) (:output-dir opts)) opts)))
+                (if (empty? @warns)
+                  (rn-eval repl-env (slurp dest)
+                    {:type   "load-file"
+                     :reload true
+                     :value  (.getPath src)})
+                  ;; TODO: it may be that warns strings have chars that will break console.warn ?
+                  (let [pre (str "Could not reload " (:ns ns-info) ":")]
+                    (warn-client repl-env
+                      (string/join "\n" (concat [pre] @warns)))))
+                (recur (next xs)))))
           (catch Throwable t
             (println t)
             (warn-client repl-env
