@@ -18,8 +18,10 @@
           opts)))))
 
 (defn deps->graph
-  "Returns a map representing the dependency graph. Because some libraries
-  can have multiple provides the result will need to be deduplicated."
+  "Given a sequence of namespace descriptor maps, returns a map representing
+  the dependency graph. Because some libraries can have multiple provides the
+  entries will often represent the same dependency. Deduplication may be
+  required."
   [deps]
   (reduce
     (fn [acc dep]
@@ -35,7 +37,10 @@
   (let [sorted-keys (mg/topo-sort graph :requires)]
     (distinct (map graph sorted-keys))))
 
-(defn sorted-deps [state ns opts]
+(defn sorted-deps
+  "Given a compiler state, a ns symbol, and ClojureScript compiler options,
+  return a topologically sorted sequence of all the dependencies."
+  [state ns opts]
   (let [all   (all-deps state ns opts)
         graph (deps->graph all)]
     (topo-sort graph)))
@@ -55,3 +60,32 @@
   [deps opts]
   (into [] (map #(add-out-file % opts)) deps))
 
+(defn ^:dynamic dependents*
+  ([ns graph]
+   (dependents* ns graph :direct))
+  ([ns graph mode]
+   (let [graph' (->> (filter
+                       (fn [[k v]]
+                         (some #{ns} (:requires v)))
+                       graph)
+                  (into {}))]
+    (condp = mode
+      :direct graph'
+
+      :all
+      (reduce
+        (fn [ret x]
+          (merge ret (dependents* x graph)))
+        graph' (keys graph'))
+
+      (throw (ex-info (str "Unsupported :mode, " mode) {}))))))
+
+(defn dependents
+  "Given an ns symbol and a dependency graph return a topologically sorted
+  sequence of all ancestors."
+  ([ns graph]
+   (dependents ns graph :direct))
+  ([ns graph mode]
+   (topo-sort
+     (binding [dependents* (memoize dependents*)]
+       (dependents* ns graph mode)))))
