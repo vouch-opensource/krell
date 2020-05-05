@@ -308,6 +308,10 @@
   [cfg value]
   (assoc-in cfg [:repl-env-options :port] value))
 
+(defn recompile-opt
+  [cfg value]
+  (assoc-in cfg [:repl-env-options :recomplie] (keyword value)))
+
 (defn watch-dirs-opt
   [cfg value]
   (assoc-in cfg [:repl-env-options :watch-dirs]
@@ -374,7 +378,13 @@
                       {:group ::cli/main
                        :fn    port-opt
                        :arg   "number"
-                       :doc   (str "When ---mdns is false, sets port for target clients to bind to.")}}
+                       :doc   (str "When ---mdns is false, sets port for target clients to bind to.")}
+                      ["-rc" "--recompile"]
+                      {:group ::cli/main
+                       :fn    recompile-opt
+                       :arg   "string"
+                       :doc   (str "Flag for recompile strategy. Supported values: direct, all. If direct, Krell will only"
+                                   "recompile namespaces that directly depend on the changed one. Defaults to \"direct\".")}}
                      :main
                      {["-s" "--serve"]
                       {:fn (fn [cfg opt]
