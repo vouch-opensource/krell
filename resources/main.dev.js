@@ -53,16 +53,16 @@ function krellUpdateRoot(cb) {
         if(!exists(global, xs)) {
             var path = goog.debugLoader_.getPathFromDeps_(main);
             onSourceLoad(path, function() {
-                cb(() => {
-                    return getMainFn(main)();
+                cb((props) => {
+                    return getMainFn(main)(props);
                 });
             });
             global.CLOSURE_UNCOMPILED_DEFINES = $CLOSURE_DEFINES;
             $CLJS_PRELOADS
             goog.require(main);
         } else {
-            cb(() => {
-                return getMainFn(main)();
+            cb((props) => {
+                return getMainFn(main)(props);
             });
         }
     });
