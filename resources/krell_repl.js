@@ -181,25 +181,29 @@ var handleMessage = function(socket, data){
     data = data.replace(/\0/g, "");
 
     try {
-        var obj = JSON.parse(data);
-        req = obj.request;
-        ret = evaluate(obj.form);
+        var msg = JSON.parse(data);
+        req = msg.request;
+        if(msg.form) {
+            ret = evaluate(msg.form);
+        }
         // output forwarding
         if (typeof ret == "function") {
             if (ret.name === "cljs$user$redirect_output") {
                 ret(socket);
             }
         }
+        // if the server loads something, let the debug loader know about it
         if(req && req.type === "load-file") {
             if(typeof goog !== "undefined") {
                 goog.debugLoader_.written_[req.value] = true;
             }
         }
+        // Android-specific hack to batch loads
         if (pendingLoads_.length > 0) {
             flushLoads_(socket);
         }
     } catch (e) {
-        console.error(e, obj.form);
+        console.error(e, msg.form);
         if(req && req.type === "load-file") {
             console.log("Failed to load file:", req.value);
         }
@@ -235,8 +239,12 @@ var handleMessage = function(socket, data){
 
         if (req) {
             notifyListeners(req);
+            // log individual file reloads
             if(req.reload) {
                 console.log(req);
+            }
+            // all changed files are done reloading, refresh
+            if(req.type === "reload") {
                 notifyReloadListeners();
             }
         }

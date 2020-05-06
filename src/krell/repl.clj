@@ -29,18 +29,18 @@
   "Evaluate a JavaScript string in the React Native REPL"
   ([repl-env js]
    (rn-eval repl-env js nil))
-  ([{:keys [options] :as repl-env} js client-req]
+  ([{:keys [options] :as repl-env} js request]
    (locking eval-lock
-     (when (and (= "load-file" (:type client-req))
+     (when (and (= "load-file" (:type request))
                 (:verbose (ana-api/get-options)))
-       (println "Load file:" (:value client-req)))
+       (println "Load file:" (:value request)))
      (let [{:keys [out]} @(:socket repl-env)]
        (net/write out
          (json/write-str
            (merge {:type "eval" :form js}
              ;; if there was client driven request then pass on this
              ;; information back to the client
-             (when client-req {:request client-req}))))
+             (when request {:request request}))))
        ;; assume transfer won't be slower than 100K/s on a local network
        (let [ack (.poll results-queue
                    (max 1 (quot (count js) (* 100 1024))) TimeUnit/SECONDS)]
@@ -203,48 +203,56 @@
         path-str (.getPath src)]
     (when (and (modified-source? repl-env evt)
                (#{".cljc" ".cljs"} (subs path-str (.lastIndexOf path-str "."))))
-      (let [state   (ana-api/current-state)
-            ns-info (ana-api/parse-ns src)
-            the-ns  (:ns ns-info)
-            ancs    (deps/dependents the-ns
-                      (deps/deps->graph (deps/all-deps state the-ns opts))
-                      (-> repl-env :options :recompile))]
-        (try
-          ;; we need to compute js deps so that requires from node_modules won't fail
-          (build-api/handle-js-modules state
-            (build-api/dependency-order
-              (build-api/add-dependency-sources
-                (concat [ns-info] ancs) opts))
-            opts)
-          (loop [xs (concat [ns-info] ancs)]
-            (when-let [ijs (first xs)]
-              (let [warns   (atom [])
-                    handler (collecting-warning-handler warns)
-                    dest    (build-api/target-file-for-cljs-ns
-                              (:ns ijs) (:output-dir opts))]
-                (ana-api/with-warning-handlers [handler]
-                  (ana-api/with-passes
-                    (into ana-api/default-passes passes/custom-passes)
-                    (comp-api/compile-file state
-                      (:source-file ijs)
-                      (build-api/target-file-for-cljs-ns
-                        (:ns ijs) (:output-dir opts)) opts)))
-                (if (empty? @warns)
-                  (rn-eval repl-env (slurp dest)
-                    {:type   "load-file"
-                     :reload true
-                     :value  (.getPath src)})
-                  ;; TODO: it may be that warns strings have chars that will break console.warn ?
-                  (let [pre (str "Could not reload " (:ns ns-info) ":")]
-                    (warn-client repl-env
-                      (string/join "\n" (concat [pre] @warns)))))
-                (recur (next xs)))))
-          (catch Throwable t
-            (println t)
-            (warn-client repl-env
-              (str (:ns ns-info)
-                " compilation failed with exception: "
-                (.getMessage t)))))))))
+      (try
+        (let [state   (ana-api/current-state)
+              ns-info (ana-api/parse-ns src)
+              the-ns  (:ns ns-info)
+              ancs    (deps/dependents the-ns
+                        (deps/deps->graph
+                          (deps/all-deps state (:main opts) opts))
+                        (-> repl-env :options :recompile))
+              all     (concat [ns-info] ancs)]
+         (try
+           ;; we need to compute js deps so that requires from node_modules won't fail
+           (build-api/handle-js-modules state
+             (build-api/dependency-order
+               (build-api/add-dependency-sources all opts))
+             opts)
+           (loop [xs all]
+             (when-let [ijs (first xs)]
+               (let [warns   (atom [])
+                     handler (collecting-warning-handler warns)
+                     dest    (build-api/target-file-for-cljs-ns
+                               (:ns ijs) (:output-dir opts))]
+                 (try
+                   (ana-api/with-warning-handlers [handler]
+                     (ana-api/with-passes
+                       (into ana-api/default-passes passes/custom-passes)
+                       (comp-api/compile-file state
+                         (:source-file ijs)
+                         (build-api/target-file-for-cljs-ns
+                           (:ns ijs) (:output-dir opts)) opts)))
+                   (if (empty? @warns)
+                     (rn-eval repl-env (slurp dest)
+                       {:type   "load-file"
+                        :reload true
+                        :value  (.getPath dest)})
+                     ;; TODO: it may be that warns strings have chars that will break console.warn ?
+                     ;; TODO: also warn at REPL
+                     (let [pre (str "Could not reload " (:ns ns-info) ":")]
+                       (warn-client repl-env
+                         (string/join "\n" (concat [pre] @warns)))))
+                   (catch Throwable t
+                     (println t)
+                     (warn-client repl-env
+                       (str (:ns ns-info)
+                         " compilation failed with exception: "
+                         (.getMessage t)))))
+                 (recur (next xs)))))
+           ;; notify client we're done
+           (rn-eval repl-env nil {:type "reload"})))
+        (catch Throwable t
+          (println t))))))
 
 (defn server-loop
   [{:keys [socket state] :as repl-env} server-socket]
@@ -293,10 +301,10 @@
                           core (dissoc opts :output-dir))))
          deps       (closure/add-dependencies opts core-js)
          repl-deps  (io/file output-dir "krell_repl_deps.js")]
-     ;; output unoptimized code and the deps file
-     ;; for all compiled namespaces
+     ;; output unoptimized code and only the deps file for all compiled
+     ;; namespaces, we don't need the bootstrap target file
      (apply closure/output-unoptimized
-       (assoc opts
+       (assoc (assoc opts :target :none)
          :output-to (.getPath repl-deps)) deps)
      (init-js-env repl-env opts))))
 
