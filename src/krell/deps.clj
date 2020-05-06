@@ -1,5 +1,6 @@
 (ns krell.deps
   (:require [cljs.analyzer.api :as ana-api]
+            [cljs.compiler.api :as comp-api]
             [cljs.build.api :as build-api]
             [cljs.closure :as closure]
             [cljs.module-graph :as mg]
@@ -88,4 +89,4 @@
   ([ns graph mode]
    (topo-sort
      (binding [dependents* (memoize dependents*)]
-       (dependents* ns graph mode)))))
+       (dependents* (comp-api/munge ns) graph mode)))))

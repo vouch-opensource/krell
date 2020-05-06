@@ -25,7 +25,7 @@
   (let [opts   {:output-dir "target"}
         state  (ana-api/empty-state)
         graph  (deps/deps->graph (deps/all-deps state 'cljs.core opts))
-        direct (map :provides (deps/dependents "goog.asserts" graph))
+        direct (map :provides (deps/dependents 'goog.assert graph))
         all    (map :provides (deps/dependents "goog.asserts" graph :all))]
     (is (= (into #{} direct))
            (->> (filter
