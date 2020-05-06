@@ -89,4 +89,4 @@
   ([ns graph mode]
    (topo-sort
      (binding [dependents* (memoize dependents*)]
-       (dependents* (comp-api/munge ns) graph mode)))))
+       (dependents* (-> ns comp-api/munge str) graph mode)))))
