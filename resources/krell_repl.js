@@ -4,6 +4,11 @@ import Zeroconf from "react-native-zeroconf";
 import { npmDeps } from "./npm_deps.js";
 import { krellNpmDeps } from "./krell_npm_deps.js";
 import { assets } from "./krell_assets.js";
+import SyncStorage from "sync-storage";
+
+SyncStorage.init().then(function() {
+    global.KRELL_CACHE = SyncStorage;
+});
 
 var CONNECTED = false;
 var IPV4 = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
@@ -192,8 +197,12 @@ var handleMessage = function(socket, data){
                 ret(socket);
             }
         }
-        // if the server loads something, let the debug loader know about it
         if(req && req.type === "load-file") {
+            SyncStorage.set(req.value, {
+                source: msg.form,
+                path: req.value,
+                modified: req.modified
+            });
             if(typeof goog !== "undefined") {
                 goog.debugLoader_.written_[req.value] = true;
             }
