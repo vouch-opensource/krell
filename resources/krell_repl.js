@@ -1,11 +1,16 @@
-import { Platform } from 'react-native';
+import { Platform } from "react-native";
 import TcpSocket from "react-native-tcp-socket";
 import Zeroconf from "react-native-zeroconf";
 import { npmDeps } from "./npm_deps.js";
 import { krellNpmDeps } from "./krell_npm_deps.js";
 import { assets } from "./krell_assets.js";
 import SyncStorage from "sync-storage";
+import AsyncStorage from "@react-native-community/async-storage";
 
+SyncStorage.constructor.prototype.clear = function() {
+    this.data = new Map();
+    AsyncStorage.clear();
+};
 SyncStorage.init().then(function() {
     global.KRELL_CACHE = SyncStorage;
 });
@@ -124,6 +129,9 @@ var flushLoads_ = function(socket) {
     pendingLoads_ = [];
 };
 
+global.CLOSURE_NO_DEPS = true;
+global.CLOSURE_BASE_PATH = "$CLOSURE_BASE_PATH";
+
 // NOTE: CLOSURE_LOAD_FILE_SYNC not needed as ClojureScript now transpiles
 // offending goog.module files that would need runtime transpiler support
 global.CLOSURE_IMPORT_SCRIPT = function(path, optContents) {
@@ -184,6 +192,15 @@ var errString = function(err) {
     }
 };
 
+var cacheFile = function(req, source) {
+    var entry = {
+        source: source,
+        path: req.value,
+        modified: req.modified
+    };
+    SyncStorage.set(req.value, entry);
+};
+
 var handleMessage = function(socket, data){
     var req = null,
         err = null,
@@ -204,11 +221,7 @@ var handleMessage = function(socket, data){
             }
         }
         if(req && req.type === "load-file") {
-            SyncStorage.set(req.value, {
-                source: msg.form,
-                path: req.value,
-                modified: req.modified
-            });
+            cacheFile(req, msg.form);
             if(typeof goog !== "undefined") {
                 goog.debugLoader_.written_[req.value] = true;
             }

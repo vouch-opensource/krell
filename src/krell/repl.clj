@@ -138,12 +138,6 @@
          cljs-deps  (io/file output-dir "cljs_deps.js")
          repl-deps  (io/file output-dir "krell_repl_deps.js")
          base-path  (.getPath (io/file (:output-dir opts) "goog"))]
-     ;; prevent auto-loading of deps.js - not really necessary since
-     ;; we write our own and it will override google's dep.js entries
-     (rn-eval repl-env
-       "var CLOSURE_NO_DEPS = true;")
-     (rn-eval repl-env
-       (str "var CLOSURE_BASE_PATH = \"" base-path File/separator "\";"))
      ;; Only ever load goog base *once*, all the dep
      ;; graph stuff is there an it needs to be preserved
      (when-not (base-loaded? repl-env)
