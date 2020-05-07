@@ -152,9 +152,9 @@
      ;; graph stuff is there an it needs to be preserved
      (when-not (base-loaded? repl-env)
        (rn-eval repl-env
-         (slurp (io/resource "goog/base.js")))
+         (slurp (io/file output-dir "goog/base.js")))
        (rn-eval repl-env
-         (slurp (io/resource "goog/deps.js"))))
+         (slurp (io/file output-dir "goog/deps.js"))))
      (rn-eval repl-env (slurp repl-deps))
      (when (.exists cljs-deps)
        (rn-eval repl-env (slurp cljs-deps)))
