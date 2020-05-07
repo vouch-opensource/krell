@@ -65,9 +65,9 @@
              ret)))))))
 
 (defn send-file
-  ([repl-env f]
+  ([repl-env f opts]
    (send-file repl-env f nil))
-  ([repl-env f request]
+  ([repl-env f request opts]
    (rn-eval repl-env (slurp f)
      (merge
        {:type     "load-file"
