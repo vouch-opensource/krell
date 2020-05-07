@@ -128,10 +128,16 @@ var flushLoads_ = function(socket) {
 // offending goog.module files that would need runtime transpiler support
 global.CLOSURE_IMPORT_SCRIPT = function(path, optContents) {
     if (optContents) {
-        eval(optContents);
+        evaluate(optContents);
         return true;
     } else {
-        loadFile(loadFileSocket, path, optContents);
+        var cached = SyncStorage.get(path);
+        if(cached) {
+            evaluate(cached.source);
+            notifyListeners({value: path});
+        } else {
+            loadFile(loadFileSocket, path, optContents);
+        }
         return true;
     }
 };
