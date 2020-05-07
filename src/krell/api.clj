@@ -6,25 +6,27 @@
 (defn- build* [options]
   (krell/krell-compile krell/repl-env {:options options}))
 
+(defn normalize-ids [x]
+  (if (sequential? x)
+    (into [] (map normalize-ids x))
+    (cond
+      (keyword? x) (recur (str (name x) ".edn"))
+      (symbol? x)  (recur (str (name x) ".edn"))
+      (string? x)  (let [rsc (or (some-> x io/resource)
+                                 (io/file x))]
+                     (if-not (nil? rsc)
+                       (edn/read-string (slurp rsc))
+                       (throw
+                         (ex-info (str "Invalid build id: " x) {}))))
+      (map? x)     x
+      :else
+      (throw
+        (ex-info (str "Invalid build id: " x) {})))))
+
 (defn build
-  "Run a Krell build. id can be a symbol, keyword, or string. If
+  "Run a Krell build. id can be a symbol, keyword, string, or map. If
   symbol or keyword the classpath will be searched for .edn file
   with a matching name. If a string, must be a relative file path.
   Can be passed extra-opts to override configuration."
-  ([id]
-   (build id nil))
-  ([id extra-opts]
-   (cond
-     (keyword? id) (recur (str (name id) ".edn") extra-opts)
-     (symbol? id)  (recur (str (name id) ".edn") extra-opts)
-     (string? id)  (let [rsc (or (some-> id io/resource)
-                               (io/file id))]
-                     (if-not (nil? rsc)
-                       (build*
-                         (merge
-                           (edn/read-string (slurp rsc))
-                           extra-opts))
-                       (throw
-                         (ex-info (str "Invalid build id: " id) {}))))
-     :else
-     (throw (ex-info (str "Invalid build id: " id) {})))))
+  ([& ids]
+   (build* (apply merge (normalize-ids ids)))))
