@@ -3,7 +3,7 @@
             [clojure.java.io :as io]
             [clojure.string :as string])
   (:import [java.io File]
-           [java.net URL]
+           [java.net URL URLDecoder]
            [java.nio.file Path]))
 
 (defn now
@@ -73,3 +73,22 @@
 (defn ns->cache-file [ns {:keys [output-dir] :as opts}]
   (let [f (build-api/target-file-for-cljs-ns ns output-dir)]
     (io/file (str (string/replace (.getPath f) #".js$" "") ".cljs.cache.json"))))
+
+(def windows?
+  (.startsWith (.toLowerCase (System/getProperty "os.name")) "windows"))
+
+(defn ^String normalize-path [^String x]
+  (-> (cond-> x
+        windows? (string/replace #"^[\\/]" ""))
+    (string/replace "\\" File/separator)
+    (string/replace "/" File/separator)))
+
+(defn ^String resource-path [x]
+  (cond
+    (file? x) (.getAbsolutePath ^File x)
+    (url? x) (if windows?
+               (let [f (URLDecoder/decode (.getFile x))]
+                 (normalize-path f))
+               (.getPath ^URL x))
+    (string? x) x
+    :else (throw (Exception. (str "Expected file, url, or string. Got " (pr-str x))))))

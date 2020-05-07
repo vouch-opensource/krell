@@ -64,6 +64,17 @@
              (load-queued-files repl-env)
              ret)))))))
 
+(defn send-file
+  ([repl-env f]
+   (send-file repl-env f nil))
+  ([repl-env f request]
+   (rn-eval repl-env (slurp f)
+     (merge
+       {:type     "load-file"
+        :value    (util/resource-path f)
+        :modified (util/last-modified f)}
+       request))))
+
 (defn load-queued-files [repl-env]
   (loop [{:keys [value] :as load-file-req} (.poll load-queue)]
     (when load-file-req
