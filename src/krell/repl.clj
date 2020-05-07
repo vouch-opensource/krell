@@ -79,8 +79,7 @@
 (defn load-queued-files [repl-env]
   (loop [{:keys [value] :as load-file-req} (.poll load-queue)]
     (when load-file-req
-      (let [f (io/file value)]
-       (rn-eval repl-env (slurp f) load-file-req))
+      (send-file repl-env (io/file value) load-file-req)
       (recur (.poll load-queue)))))
 
 (defn load-javascript
