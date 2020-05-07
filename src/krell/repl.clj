@@ -64,6 +64,7 @@
              (load-queued-files repl-env)
              ret)))))))
 
+;; TODO: fix for Windows, .getPath won't return a URL style path
 (defn send-file
   ([repl-env f opts]
    (send-file repl-env f nil opts))
@@ -71,7 +72,7 @@
    (rn-eval repl-env (slurp f)
      (merge
        {:type     "load-file"
-        :value    (util/closure-relative-path f opts)
+        :value    (.getPath f)
         :modified (util/last-modified f)}
        request))))
 
@@ -126,12 +127,8 @@
   (doseq [ijs (-> (deps/sorted-deps
                     (ana-api/current-state) 'cljs.core opts)
                 (deps/with-out-files opts))]
-    (let [out-file (:out-file ijs)
-          contents (slurp out-file)]
-      (rn-eval repl-env contents
-        {:type  "load-file"
-         :ns    (-> ijs :provides first)
-         :value (.getPath ^File out-file)}))))
+    (send-file repl-env (:out-file ijs)
+      {:ns (-> ijs :provides first)})))
 
 (defn init-js-env
   ([repl-env]
