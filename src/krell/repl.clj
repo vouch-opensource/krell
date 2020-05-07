@@ -151,10 +151,8 @@
      ;; Only ever load goog base *once*, all the dep
      ;; graph stuff is there an it needs to be preserved
      (when-not (base-loaded? repl-env)
-       (rn-eval repl-env
-         (slurp (io/file output-dir "goog/base.js")))
-       (rn-eval repl-env
-         (slurp (io/file output-dir "goog/deps.js"))))
+       (send-file repl-env (io/file output-dir "goog/base.js") opts)
+       (send-file repl-env (io/file output-dir "goog/deps.js") opts))
      (rn-eval repl-env (slurp repl-deps))
      (when (.exists cljs-deps)
        (rn-eval repl-env (slurp cljs-deps)))
