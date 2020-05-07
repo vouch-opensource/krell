@@ -149,9 +149,9 @@
      (when-not (base-loaded? repl-env)
        (send-file repl-env (io/file output-dir "goog/base.js") opts)
        (send-file repl-env (io/file output-dir "goog/deps.js") opts))
-     (rn-eval repl-env (slurp repl-deps))
+     (send-file repl-env repl-deps opts)
      (when (.exists cljs-deps)
-       (rn-eval repl-env (slurp cljs-deps)))
+       (send-file repl-env cljs-deps opts))
      (when-not (core-loaded? repl-env)
        ;; We cannot rely on goog.require because the debug loader assumes
        ;; you can load script synchronously which isn't possible in React
