@@ -46,7 +46,7 @@
 (defn to-path ^Path [^File f]
   (.toPath f))
 
-(defn relativize [^File source ^File target]
+(defn relativize ^File [^File source ^File target]
   (to-file (.relativize (to-path source) (to-path target))))
 
 (defn get-path [^File f]
@@ -74,21 +74,5 @@
   (let [f (build-api/target-file-for-cljs-ns ns output-dir)]
     (io/file (str (string/replace (.getPath f) #".js$" "") ".cljs.cache.json"))))
 
-(def windows?
-  (.startsWith (.toLowerCase (System/getProperty "os.name")) "windows"))
-
-(defn ^String normalize-path [^String x]
-  (-> (cond-> x
-        windows? (string/replace #"^[\\/]" ""))
-    (string/replace "\\" File/separator)
-    (string/replace "/" File/separator)))
-
-(defn ^String resource-path [x]
-  (cond
-    (file? x) (.getAbsolutePath ^File x)
-    (url? x) (if windows?
-               (let [f (URLDecoder/decode (.getFile x))]
-                 (normalize-path f))
-               (.getPath ^URL x))
-    (string? x) x
-    :else (throw (Exception. (str "Expected file, url, or string. Got " (pr-str x))))))
+(defn closure-relative-path [file-path opts]
+  (.getPath (relativize (io/file (:output-dir opts) "goog") (io/file file-path))))
