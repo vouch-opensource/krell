@@ -24,9 +24,8 @@
         (ex-info (str "Invalid build id: " x) {})))))
 
 (defn build
-  "Run a Krell build. id can be a symbol, keyword, string, or map. If
-  symbol or keyword the classpath will be searched for .edn file
-  with a matching name. If a string, must be a relative file path.
-  Can be passed extra-opts to override configuration."
+  "Run a Krell build. ids can be a symbol, keyword, string, or map. If
+  symbol or keyword the classpath will be searched for .edn config file
+  with a matching name. If a string, must be a relative file path."
   ([& ids]
    (build* (apply merge (normalize-ids ids)))))
