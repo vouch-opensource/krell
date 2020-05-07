@@ -239,10 +239,7 @@
                          (build-api/target-file-for-cljs-ns
                            (:ns ijs) (:output-dir opts)) opts)))
                    (if (empty? @warns)
-                     (rn-eval repl-env (slurp dest)
-                       {:type   "load-file"
-                        :reload true
-                        :value  (.getPath dest)})
+                     (send-file repl-env dest {:reload true})
                      ;; TODO: it may be that warns strings have chars that will break console.warn ?
                      ;; TODO: also warn at REPL
                      (let [pre (str "Could not reload " (:ns ns-info) ":")]
