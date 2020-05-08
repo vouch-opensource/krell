@@ -101,6 +101,10 @@ asset requires that will work.
 See the [Reagent example tutorial](https://github.com/vouchio/krell/wiki/Reagent-Tutorial) 
 in the wiki.
 
+## Tooling Integration
+
+[See the wiki](https://github.com/vouch-opensource/krell/wiki/Tooling-Integration---Emacs%2C-Cursive%2C-etc.).
+
 ## Contributing
 
 Currently Krell is only taking bug reports. If you find a bug or would like
