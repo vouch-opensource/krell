@@ -4,6 +4,7 @@ import Zeroconf from "react-native-zeroconf";
 import { npmDeps } from "./npm_deps.js";
 import { krellNpmDeps } from "./krell_npm_deps.js";
 import { assets } from "./krell_assets.js";
+import SQLite from "react-native-sqlite-storage";
 
 var CONNECTED = false;
 var IPV4 = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
