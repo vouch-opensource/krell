@@ -4,16 +4,6 @@ import Zeroconf from "react-native-zeroconf";
 import { npmDeps } from "./npm_deps.js";
 import { krellNpmDeps } from "./krell_npm_deps.js";
 import { assets } from "./krell_assets.js";
-import SyncStorage from "sync-storage";
-import AsyncStorage from "@react-native-community/async-storage";
-
-SyncStorage.constructor.prototype.clear = function() {
-    this.data = new Map();
-    AsyncStorage.clear();
-};
-SyncStorage.init().then(function() {
-    global.KRELL_CACHE = SyncStorage;
-});
 
 var CONNECTED = false;
 var IPV4 = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
@@ -139,7 +129,7 @@ global.CLOSURE_IMPORT_SCRIPT = function(path, optContents) {
         evaluate(optContents);
         return true;
     } else {
-        var cached = SyncStorage.get(path);
+        var cached = null;
         if(cached) {
             evaluate(cached.source);
             notifyListeners({value: path});
@@ -198,7 +188,6 @@ var cacheFile = function(req, source) {
         path: req.value,
         modified: req.modified
     };
-    SyncStorage.set(req.value, entry);
 };
 
 var handleMessage = function(socket, data){
