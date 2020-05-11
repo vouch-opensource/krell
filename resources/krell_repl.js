@@ -32,7 +32,7 @@ const isKrellKey = (x) => {
 const krellPrefix = (x) => {
     if(isKrellKey(x)) {
         return x;
-    } else  if (typeof x === "string") {
+    } else if (typeof x === "string") {
         return "krell_cache:" + x;
     } else {
         throw Error("Invalid cache key: " + x);
@@ -41,11 +41,17 @@ const krellPrefix = (x) => {
 
 const initCache = async () => {
     let keys = await AsyncStorage.getAllKeys();
-    for(let key in keys) {
-        if(isKrellKey(key)) {
-            MEM_CACHE.set(key, await AsyncStorage.get(key));
+    try {
+        for (let key in keys) {
+            if (isKrellKey(key)) {
+                MEM_CACHE.set(key, await AsyncStorage.get(key));
+            }
         }
+    } catch(e) {
+        console.error(e);
+        return false;
     }
+    return true;
 };
 
 const cache = (path, entry) => {
