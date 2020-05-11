@@ -24,18 +24,27 @@ var pendingLoads_ = [];
 // Caching Support
 
 var MEM_CACHE = new Map();
+var CACHE_PREFIX = "krell_cache:";
 
 const isKrellKey = (x) => {
-    return x.indexOf("krell_cache:") === 0;
+    return x.indexOf(CACHE_PREFIX) === 0;
 };
 
 const krellPrefix = (x) => {
     if(isKrellKey(x)) {
         return x;
     } else if (typeof x === "string") {
-        return "krell_cache:" + x;
+        return CACHE_PREFIX + x;
     } else {
         throw Error("Invalid cache key: " + x);
+    }
+};
+
+const removePrefix = (x) => {
+    if(isKrellKey(x)) {
+        return x.substring(CACHE_PREFIX.length);
+    } else {
+        return x;
     }
 };
 
@@ -44,7 +53,7 @@ const cacheInit = async () => {
     try {
         for (let key in keys) {
             if (isKrellKey(key)) {
-                MEM_CACHE.set(key, await AsyncStorage.getItem(key));
+                MEM_CACHE.set(removePrefix(key), JSON.parse(await AsyncStorage.getItem(key)));
             }
         }
     } catch(e) {
@@ -55,9 +64,8 @@ const cacheInit = async () => {
 };
 
 const cachePut = (path, entry) => {
-    let cacheKey = krellPrefix(path);
-    MEM_CACHE.set(cacheKey, entry);
-    AsyncStorage.setItem(cacheKey, entry);
+    MEM_CACHE.set(path, entry);
+    AsyncStorage.setItem(krellPrefix(path), JSON.stringify(entry));
 };
 
 const cacheGet = (path) => {
