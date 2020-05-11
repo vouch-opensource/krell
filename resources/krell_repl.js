@@ -376,5 +376,6 @@ tryConnection();
 
 module.exports = {
     onSourceLoad: onSourceLoad,
-    onKrellReload: onKrellReload
+    onKrellReload: onKrellReload,
+    evaluate: evaluate
 };

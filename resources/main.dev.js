@@ -1,4 +1,4 @@
-import {onSourceLoad, onKrellReload} from './krell_repl.js';
+import {evaluate, onSourceLoad, onKrellReload} from './krell_repl.js';
 
 var main = '$KRELL_MAIN_NS';
 
@@ -12,6 +12,13 @@ function nsToPath(ns) {
     segs[segs.length-1] = last + ".js";
     return toPath(segs.join("/"));
 }
+
+function bootstrap() {
+    evaluate(KRELL_CACHE.get(toPath("goog/base.js")));
+    evaluate(KRELL_CACHE.get(toPath("goog/deps.js")));
+    evaluate(KRELL_CACHE.get(toPath("cljs_deps.js")));
+    evaluate(KRELL_CACHE.get(toPath("krell_repl_deps.js")));
+};
 
 function waitForCore(cb) {
     //console.log("wait for core, cache ready", nsToPath(main), KRELL_CACHE.has(nsToPath(main)));
