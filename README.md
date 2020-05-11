@@ -41,8 +41,7 @@ Krell generates a single file output without the REPL dependencies.
 Using React Native >= 0.60 is highly recommended as autolinking simplifies usage
 greatly. If you must use an older version of React Native refer to the
 documentation for the REPL support dependencies:
-[react-native-tcp-socket](https://www.npmjs.com/package/react-native-tcp-socket),
-[react-native-zeroconf](https://github.com/balthazar/react-native-zeroconf).
+[react-native-tcp-socket](https://www.npmjs.com/package/react-native-tcp-socket).
 
 ## Install REPL Dependencies
 

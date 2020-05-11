@@ -11,7 +11,6 @@
             [clojure.string :as string]
             [krell.deps :as deps]
             [krell.gen :as gen]
-            [krell.mdns :as mdns]
             [krell.net :as net]
             [krell.passes :as passes]
             [krell.util :as util]
@@ -267,8 +266,6 @@
   ([{:keys [options state socket] :as repl-env} opts]
    (let [port (:port options)]
      (println "\nWaiting for device connection on port" port)
-     ;; TODO: put mdns into the state so we can cleanup in REPL teardown
-     (mdns/register-service (mdns/jmdns) (mdns/krell-service-info port))
      (.start
        (Thread.
          (bound-fn []
@@ -382,7 +379,7 @@
                       {:group ::cli/main
                        :fn    port-opt
                        :arg   "number"
-                       :doc   (str "When ---mdns is false, sets port for target clients to bind to.")}
+                       :doc   (str "Sets port for target clients to bind to.")}
                       ["-rc" "--recompile"]
                       {:group ::cli/main
                        :fn    recompile-opt
