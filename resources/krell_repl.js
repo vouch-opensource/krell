@@ -80,7 +80,7 @@ global.KRELL_CACHE = {
     clear: cacheClear
 };
 
-initCache();
+cacheInit();
 
 // =============================================================================
 // REPL Server
