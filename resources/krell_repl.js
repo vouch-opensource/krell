@@ -39,7 +39,7 @@ const krellPrefix = (x) => {
     }
 };
 
-const initCache = async () => {
+const cacheInit = async () => {
     let keys = await AsyncStorage.getAllKeys();
     try {
         for (let key in keys) {
@@ -54,17 +54,17 @@ const initCache = async () => {
     return true;
 };
 
-const cache = (path, entry) => {
+const cachePut = (path, entry) => {
     let cacheKey = krellPrefix(path);
     MEM_CACHE.set(cacheKey, entry);
     AsyncStorage.set(cacheKey, entry);
 };
 
-const getCache = (path) => {
+const cacheGet = (path) => {
     return MEM_CACHE.get(krellPrefix(path));
 };
 
-const clearCache = async (path) => {
+const cacheClear = async (path) => {
     let cacheKeys = MEM_CACHE.keys();
     MEM_CACHE = new Map();
     for(let cacheKey in cacheKeys) {
@@ -72,7 +72,13 @@ const clearCache = async (path) => {
     }
 };
 
-global.KRELL_CLEAR_CACHE = clearCache;
+global.KRELL_CACHE = {
+    mem: MEM_CACHE,
+    init: cacheInit,
+    put: cachePut,
+    get: cacheGet,
+    clear: cacheClear
+};
 
 initCache();
 
