@@ -21,6 +21,54 @@ var reloadListeners = [];
 var pendingLoads_ = [];
 
 // =============================================================================
+// Caching Support
+
+var MEM_CACHE = new Map();
+
+const isKrellKey = (x) => {
+    return x.indexOf("krell_cache:") === 0;
+};
+
+const krellPrefix = (x) => {
+    if (typeof x === "string") {
+        return "krell_cache:" + x;
+    } else {
+        throw Error("Invalid cache key: " + x);
+    }
+};
+
+const initCache = async () => {
+    try {
+        let keys = await AsyncStorage.getAllKeys();
+        for(let key in keys) {
+            if(isKrellKey(key)) {
+                MEM_CACHE.set(key, await AsyncStorage.get(key));
+            }
+        }
+    } catch(e) {
+        console.error(e);
+    }
+};
+
+const cache = (path, entry) => {
+    let cacheKey = krellPrefix(path);
+    MEM_CACHE.set(cacheKey, entry);
+    AsyncStorage.set(cacheKey, entry);
+};
+
+const getCache = (path) => {
+    return MEM_CACHE.get(krellPrefix(path));
+};
+
+const clearCache = async (path) => {
+    let cacheKeys = MEM_CACHE.keys();
+    MEM_CACHE = new Map();
+    for(let cacheKey in cacheKeys) {
+        AsyncStorage.removeItem(cacheKeys);
+    }
+};
+
+// =============================================================================
 // REPL Server
 
 var loadFileSocket = null;
