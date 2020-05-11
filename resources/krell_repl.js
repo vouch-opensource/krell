@@ -51,7 +51,7 @@ const removePrefix = (x) => {
 const cacheInit = async () => {
     let keys = await AsyncStorage.getAllKeys();
     try {
-        for (let key in keys) {
+        for (let key of keys) {
             if (isKrellKey(key)) {
                 MEM_CACHE.set(removePrefix(key), JSON.parse(await AsyncStorage.getItem(key)));
             }
@@ -72,12 +72,20 @@ const cacheGet = (path) => {
     return MEM_CACHE.get(path);
 };
 
-const cacheClear = async (path) => {
+const cacheClear = async (all) => {
     let cacheKeys = MEM_CACHE.keys();
     MEM_CACHE = new Map();
-    for(let cacheKey in cacheKeys) {
-        AsyncStorage.removeItem(cacheKeys);
+    if (all === true) {
+        AsyncStorage.clear();
+    } else {
+        for (let cacheKey of cacheKeys) {
+            AsyncStorage.removeItem(cacheKeys);
+        }
     }
+};
+
+const cacheHas = function(path) {
+    return MEM_CACHE.has(path);
 };
 
 global.KRELL_CACHE = {
@@ -85,6 +93,7 @@ global.KRELL_CACHE = {
     init: cacheInit,
     put: cachePut,
     get: cacheGet,
+    has: cacheHas,
     clear: cacheClear
 };
 

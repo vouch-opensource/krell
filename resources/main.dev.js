@@ -3,11 +3,18 @@ import {onSourceLoad, onKrellReload} from './krell_repl.js';
 var main = '$KRELL_MAIN_NS';
 
 function toPath(path) {
-    return CLOSURE_BASE_PATH + path;
+    return CLOSURE_BASE_PATH.replace("goog/", "") + path;
+}
+
+function nsToPath(ns) {
+    let segs = ns.split("."),
+        last = segs[segs.length-1];
+    segs[segs.length-1] = last + ".js";
+    return toPath(segs.join("/"));
 }
 
 function waitForCore(cb) {
-    //console.log("wait for core, cache ready", KRELL_CACHE.get(toPath("goog/base.js")));
+    //console.log("wait for core, cache ready", nsToPath(main), KRELL_CACHE.has(nsToPath(main)));
     if(typeof cljs !== 'undefined') {
         cb();
     } else {
