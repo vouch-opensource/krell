@@ -154,9 +154,6 @@
        (repl/evaluate-form repl-env env "<cljs repl>"
          '(enable-console-print!))
        (bootstrap/install-repl-goog-require repl-env env))
-     (rn-eval repl-env
-       (str "goog.global.CLOSURE_UNCOMPILED_DEFINES = "
-         (json/write-str (:closure-defines opts)) ";"))
      ;; setup printing
      (repl/evaluate-form repl-env env "<cljs repl>"
        '((fn []

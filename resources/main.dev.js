@@ -14,15 +14,19 @@ function nsToPath(ns) {
 }
 
 function bootstrap() {
-    evaluate(KRELL_CACHE.get(toPath("goog/base.js")));
-    evaluate(KRELL_CACHE.get(toPath("goog/deps.js")));
-    evaluate(KRELL_CACHE.get(toPath("cljs_deps.js")));
-    evaluate(KRELL_CACHE.get(toPath("krell_repl_deps.js")));
-};
+    evaluate(KRELL_CACHE.get(toPath("goog/base.js")).source);
+    evaluate(KRELL_CACHE.get(toPath("goog/deps.js")).source);
+    evaluate(KRELL_CACHE.get(toPath("cljs_deps.js")).source);
+    evaluate(KRELL_CACHE.get(toPath("krell_repl_deps.js").source));
+    goog.isProvided__ = goog.isProvided_;
+    goog.isProvided_ = (x) => false;
+}
 
 function waitForCore(cb) {
-    //console.log("wait for core, cache ready", nsToPath(main), KRELL_CACHE.has(nsToPath(main)));
-    if(typeof cljs !== 'undefined') {
+    if(KRELL_CACHE.has(nsToPath(main))) {
+        bootstrap();
+        cb();
+    } else if(typeof cljs !== 'undefined') {
         cb();
     } else {
         setTimeout(function() { waitForCore(cb); }, 250);
