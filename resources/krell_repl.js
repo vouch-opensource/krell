@@ -30,7 +30,9 @@ const isKrellKey = (x) => {
 };
 
 const krellPrefix = (x) => {
-    if (typeof x === "string") {
+    if(isKrellKey(x)) {
+        return x;
+    } else  if (typeof x === "string") {
         return "krell_cache:" + x;
     } else {
         throw Error("Invalid cache key: " + x);
@@ -63,6 +65,10 @@ const clearCache = async (path) => {
         AsyncStorage.removeItem(cacheKeys);
     }
 };
+
+global.KRELL_CLEAR_CACHE = clearCache;
+
+initCache();
 
 // =============================================================================
 // REPL Server
