@@ -44,7 +44,7 @@ const cacheInit = async () => {
     try {
         for (let key in keys) {
             if (isKrellKey(key)) {
-                MEM_CACHE.set(key, await AsyncStorage.get(key));
+                MEM_CACHE.set(key, await AsyncStorage.getItem(key));
             }
         }
     } catch(e) {
@@ -57,11 +57,11 @@ const cacheInit = async () => {
 const cachePut = (path, entry) => {
     let cacheKey = krellPrefix(path);
     MEM_CACHE.set(cacheKey, entry);
-    AsyncStorage.set(cacheKey, entry);
+    AsyncStorage.setItem(cacheKey, entry);
 };
 
 const cacheGet = (path) => {
-    return MEM_CACHE.get(krellPrefix(path));
+    return MEM_CACHE.getItem(krellPrefix(path));
 };
 
 const cacheClear = async (path) => {
@@ -216,14 +216,6 @@ var errString = function(err) {
     }
 };
 
-var cacheFile = function(req, source) {
-    var entry = {
-        source: source,
-        path: req.value,
-        modified: req.modified
-    };
-};
-
 var handleMessage = function(socket, data){
     var req = null,
         err = null,
@@ -244,7 +236,12 @@ var handleMessage = function(socket, data){
             }
         }
         if(req && req.type === "load-file") {
-            cacheFile(req, msg.form);
+            let path = req.value;
+            KRELL_CACHE.put(path, {
+                source: msg.form,
+                path: path,
+                modified: req.modified
+            });
             if(typeof goog !== "undefined") {
                 goog.debugLoader_.written_[req.value] = true;
             }
