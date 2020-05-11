@@ -2,7 +2,12 @@ import {onSourceLoad, onKrellReload} from './krell_repl.js';
 
 var main = '$KRELL_MAIN_NS';
 
+function toPath(path) {
+    return CLOSURE_BASE_PATH + path;
+}
+
 function waitForCore(cb) {
+    //console.log("wait for core, cache ready", KRELL_CACHE.get(toPath("goog/base.js")));
     if(typeof cljs !== 'undefined') {
         cb();
     } else {

@@ -69,7 +69,7 @@ const cachePut = (path, entry) => {
 };
 
 const cacheGet = (path) => {
-    return MEM_CACHE.getItem(krellPrefix(path));
+    return MEM_CACHE.get(path);
 };
 
 const cacheClear = async (path) => {
@@ -171,7 +171,7 @@ global.CLOSURE_IMPORT_SCRIPT = function(path, optContents) {
         evaluate(optContents);
         return true;
     } else {
-        var cached = null;
+        var cached = KRELL_CACHE.get(path);
         if(cached) {
             evaluate(cached.source);
             notifyListeners({value: path});
