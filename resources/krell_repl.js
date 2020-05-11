@@ -38,15 +38,11 @@ const krellPrefix = (x) => {
 };
 
 const initCache = async () => {
-    try {
-        let keys = await AsyncStorage.getAllKeys();
-        for(let key in keys) {
-            if(isKrellKey(key)) {
-                MEM_CACHE.set(key, await AsyncStorage.get(key));
-            }
+    let keys = await AsyncStorage.getAllKeys();
+    for(let key in keys) {
+        if(isKrellKey(key)) {
+            MEM_CACHE.set(key, await AsyncStorage.get(key));
         }
-    } catch(e) {
-        console.error(e);
     }
 };
 
