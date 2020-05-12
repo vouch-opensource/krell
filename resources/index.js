@@ -7,7 +7,7 @@ import {
     Text
 } from 'react-native';
 import {name as appName} from './app.json';
-import {krellUpdateRoot, onKrellReload} from './$KRELL_OUTPUT_TO';
+import {krellUpdateRoot, krellStaleRoot, onKrellReload} from './$KRELL_OUTPUT_TO';
 
 /*
  * Establish a root that works for REPL based dev / prod. In the REPL case
@@ -50,6 +50,11 @@ class KrellRoot extends React.Component {
             let newState = Object.assign({}, krell.state);
             newState.root = appRoot;
             newState.loaded = true;
+            krell.setState(newState);
+        });
+        krellStaleRoot(() => {
+            let newState = Object.assign({}, krell.state);
+            newState.stale = true;
             krell.setState(newState);
         });
         onKrellReload(() => {
