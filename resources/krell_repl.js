@@ -1,12 +1,10 @@
 import { Platform } from 'react-native';
 import TcpSocket from "react-native-tcp-socket";
-import Zeroconf from "react-native-zeroconf";
 import { npmDeps } from "./npm_deps.js";
 import { krellNpmDeps } from "./krell_npm_deps.js";
 import { assets } from "./krell_assets.js";
 
 var CONNECTED = false;
-var IPV4 = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
 var RECONNECT_INTERVAL = 3000;
 
 var SERVER_IP = "$KRELL_SERVER_IP";
@@ -19,34 +17,6 @@ var evaluate = eval;
 var libLoadListeners = {};
 var reloadListeners = [];
 var pendingLoads_ = [];
-
-// =============================================================================
-// ZeroConf Service Publication / Discovery
-
-const zeroconf = new Zeroconf();
-
-zeroconf.on("start", () => {
-    console.log("Scan started");
-});
-
-zeroconf.on("stop", () => {
-    console.log("Scan stopped");
-});
-
-zeroconf.on("found", name => {
-    console.log("Service found:", JSON.stringify(name));
-});
-
-zeroconf.on("resolved", service => {
-    console.log("Service resolved:", JSON.stringify(service));
-    // TODO: do this only if not already connected
-    if(!CONNECTED && (service.name.indexOf("Krell-REPL-Server") !== -1)) {
-        SERVER_IP = service.addresses.find(x => x.match(IPV4));
-        SERVER_PORT = service.port;
-    }
-});
-
-zeroconf.scan("http", "tcp", "local.");
 
 // =============================================================================
 // REPL Server
