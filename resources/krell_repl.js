@@ -66,6 +66,7 @@ const cacheInit = async () => {
 
 const cachePut = (path, entry) => {
     MEM_CACHE.set(path, entry);
+    console.log("CACHE PUT:", path, entry.modified);
     AsyncStorage.setItem(krellPrefix(path), JSON.stringify(entry))
         .catch((err) => {
             console.log("Could not cache path:", path, "error:", err);
@@ -83,7 +84,8 @@ const cacheClear = async (all) => {
         AsyncStorage.clear();
     } else {
         for (let cacheKey of cacheKeys) {
-            AsyncStorage.removeItem(cacheKey)
+            console.log("CACHE DELETE", cacheKey);
+            AsyncStorage.removeItem(krellPrefix(cacheKey));
         }
     }
 };

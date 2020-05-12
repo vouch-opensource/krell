@@ -6,6 +6,13 @@ function toPath(path) {
     return CLOSURE_BASE_PATH.replace("goog/", "") + path;
 }
 
+function nsToPath(ns) {
+    let segs = ns.split("."),
+        last = segs[segs.length-1];
+    segs[segs.length-1] = last + ".js";
+    return toPath(segs.join("/"));
+}
+
 function bootstrap() {
     try {
         evaluate(KRELL_CACHE.get(toPath("goog/base.js")).source);
@@ -21,7 +28,7 @@ function bootstrap() {
 }
 
 function waitForCore(cb) {
-    if(KRELL_CACHE.ready) {
+    if(KRELL_CACHE.has(nsToPath(main)) && KRELL_CACHE.ready) {
         bootstrap();
         cb();
     } else if(typeof cljs !== 'undefined') {
