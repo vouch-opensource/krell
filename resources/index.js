@@ -17,7 +17,7 @@ import {krellUpdateRoot, onKrellReload} from './$KRELL_OUTPUT_TO';
 class KrellRoot extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {loaded: false, root: null, tx: 0};
+        this.state = {loaded: false, stale: false, root: null, tx: 0};
     }
 
     render() {
@@ -27,11 +27,19 @@ class KrellRoot extends React.Component {
                 alignItems: 'center',
                 justifyContent: 'center'
             };
-            return (
-                <View style={plainStyle}>
-                    <Text>Waiting for Krell to load files.</Text>
-                </View>
-            );
+            if (this.state.stale) {
+                return (
+                    <View style={plainStyle}>
+                        <Text>Application is stale. Refresh to get the latest.</Text>
+                    </View>
+                );
+            } else {
+                return (
+                    <View style={plainStyle}>
+                        <Text>Waiting for Krell to load files.</Text>
+                    </View>
+                );
+            }
         }
         return this.state.root(this.props);
     }
@@ -39,15 +47,16 @@ class KrellRoot extends React.Component {
     componentDidMount() {
         let krell = this;
         krellUpdateRoot((appRoot) => {
-            krell.setState({root: appRoot, loaded: true});
+            let newState = Object.assign({}, krell.state);
+            newState.root = appRoot;
+            newState.loaded = true;
+            krell.setState(newState);
         });
         onKrellReload(() => {
             krell.setState((state, props) => {
-                return {
-                    loaded: state.loaded,
-                    root: state.root,
-                    tx: state.tx+1
-                }
+                let newState = Object.assign({}, state);
+                newState.tx++;
+                return newState;
             });
         });
     }
