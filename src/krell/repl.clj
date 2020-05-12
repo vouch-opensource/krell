@@ -260,11 +260,9 @@
   [{:keys [socket state] :as repl-env} server-socket]
   (when-let [conn (try (.accept server-socket) (catch Throwable _))]
     (.setKeepAlive conn true)
-    ;; TODO: just ignoring new connections for now, maybe we want to do
-    ;; something else? i.e. the current socket was closed because of a RN
-    ;; reload
-    (when-not @socket
-      (reset! socket (net/socket->socket-map conn)))
+    (when-let [sock @socket]
+      (future (net/close-socket sock)))
+    (reset! socket (net/socket->socket-map conn))
     (when-not (:done @state)
       (recur repl-env server-socket))))
 
