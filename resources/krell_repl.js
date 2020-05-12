@@ -52,13 +52,15 @@ const cacheInit = async () => {
     try {
         for (let key of keys) {
             if (isKrellKey(key)) {
-                MEM_CACHE.set(removePrefix(key), JSON.parse(await AsyncStorage.getItem(key)));
+                let path = removePrefix(key);
+                MEM_CACHE.set(path, JSON.parse(await AsyncStorage.getItem(key)));
             }
         }
     } catch(e) {
         console.error(e);
         return false;
     }
+    KRELL_CACHE.ready = true;
     return true;
 };
 
@@ -97,7 +99,8 @@ global.KRELL_CACHE = {
     put: cachePut,
     get: cacheGet,
     has: cacheHas,
-    clear: cacheClear
+    clear: cacheClear,
+    ready: false
 };
 
 cacheInit();

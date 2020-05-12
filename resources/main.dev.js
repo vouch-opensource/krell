@@ -14,16 +14,21 @@ function nsToPath(ns) {
 }
 
 function bootstrap() {
-    evaluate(KRELL_CACHE.get(toPath("goog/base.js")).source);
-    evaluate(KRELL_CACHE.get(toPath("goog/deps.js")).source);
-    evaluate(KRELL_CACHE.get(toPath("cljs_deps.js")).source);
-    evaluate(KRELL_CACHE.get(toPath("krell_repl_deps.js").source));
-    goog.isProvided__ = goog.isProvided_;
-    goog.isProvided_ = (x) => false;
+    try {
+        evaluate(KRELL_CACHE.get(toPath("goog/base.js")).source);
+        evaluate(KRELL_CACHE.get(toPath("goog/deps.js")).source);
+        evaluate(KRELL_CACHE.get(toPath("cljs_deps.js")).source);
+        evaluate(KRELL_CACHE.get(toPath("krell_repl_deps.js").source));
+        goog.isProvided__ = goog.isProvided_;
+        goog.isProvided_ = (x) => false;
+        console.log("Bootstrapped from cache");
+    } catch(e) {
+        console.log("Bootstrap from cache failed:", e);
+    }
 }
 
 function waitForCore(cb) {
-    if(KRELL_CACHE.has(nsToPath(main))) {
+    if(KRELL_CACHE.ready) {
         bootstrap();
         cb();
     } else if(typeof cljs !== 'undefined') {
