@@ -9,6 +9,12 @@ import {
 import {name as appName} from './app.json';
 import {krellUpdateRoot, krellStaleRoot, onKrellReload} from './$KRELL_OUTPUT_TO';
 
+let plainStyle = {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center'
+};
+
 /*
  * Establish a root that works for REPL based dev / prod. In the REPL case
  * the real app root will be loaded async. In prod it won't really be async
@@ -22,11 +28,12 @@ class KrellRoot extends React.Component {
 
     render() {
         if (!this.state.loaded) {
-            let plainStyle = {
-                flex: 1,
-                alignItems: 'center',
-                justifyContent: 'center'
-            };
+            return (
+                <View style={plainStyle}>
+                    <Text>Waiting for Krell to load files.</Text>
+                </View>
+            );
+        } else {
             if (this.state.stale) {
                 return (
                     <View style={plainStyle}>
@@ -34,14 +41,9 @@ class KrellRoot extends React.Component {
                     </View>
                 );
             } else {
-                return (
-                    <View style={plainStyle}>
-                        <Text>Waiting for Krell to load files.</Text>
-                    </View>
-                );
+                return this.state.root(this.props);
             }
         }
-        return this.state.root(this.props);
     }
 
     componentDidMount() {
@@ -53,6 +55,7 @@ class KrellRoot extends React.Component {
             krell.setState(newState);
         });
         krellStaleRoot(() => {
+            console.log("STALE ROOT");
             let newState = Object.assign({}, krell.state);
             newState.stale = true;
             krell.setState(newState);
