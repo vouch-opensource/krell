@@ -248,10 +248,12 @@ var initSocket = function(socket) {
     });
 
     socket.on("error", error => {
-        console.log("An error occurred with client socket", error);
+        socket.destroy();
+        console.log("An error occurred with client socket:", error);
     });
 
     socket.on("close", error => {
+        socket.destroy();
         if (CONNECTED) {
             console.log("Closed connection with", socket.address());
         }
