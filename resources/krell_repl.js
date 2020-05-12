@@ -278,12 +278,12 @@ var initSocket = function(socket) {
     });
 
     socket.on("error", error => {
-        console.log("An error ocurred with client socket ", error);
+        console.log("An error ocurred with client socket", error);
     });
 
     socket.on("close", error => {
         if (CONNECTED) {
-            console.log("Closed connection with ", socket.address());
+            console.log("Closed connection with", socket.address());
         }
         CONNECTED = false;
         setTimeout(tryConnection, RECONNECT_INTERVAL);
