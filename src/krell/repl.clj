@@ -81,6 +81,21 @@
       (send-file repl-env (io/file value) load-file-req)
       (recur (.poll load-queue)))))
 
+(defn last-modified-index
+  [opts]
+  (into {}
+    (map (fn [[k v]] [(.getPath ^File (:out-file v)) (:modified v)]))
+    (deps/deps->graph
+      (deps/with-out-files
+        (deps/all-deps (ana-api/current-state) (:main opts) opts) opts))))
+
+(defn cache-compare
+  ([repl-env opts]
+   (rn-eval repl-env nil
+     (merge
+       {:type "cache-compare"
+        :request {:index (last-modified-index opts)}}))))
+
 (defn load-javascript
   "Load a Closure JavaScript file into the React Native REPL"
   [repl-env provides url]
@@ -257,14 +272,6 @@
     (reset! socket (net/socket->socket-map conn))
     (when-not (:done @state)
       (recur repl-env server-socket))))
-
-(defn last-modified-index
-  [opts]
-  (into {}
-    (map (fn [[k v]] [(.getPath ^File (:out-file v)) (:modified v)]))
-    (deps/deps->graph
-      (deps/with-out-files
-        (deps/all-deps (ana-api/current-state) (:main opts) opts) opts))))
 
 (defn setup
   ([repl-env] (setup repl-env nil))
