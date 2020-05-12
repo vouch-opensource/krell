@@ -278,7 +278,7 @@ var initSocket = function(socket) {
     });
 
     socket.on("error", error => {
-        console.log("An error ocurred with client socket", error);
+        console.log("An error occurred with client socket", error);
     });
 
     socket.on("close", error => {
