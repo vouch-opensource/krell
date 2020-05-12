@@ -93,6 +93,15 @@ const cacheHas = function(path) {
     return MEM_CACHE.has(path);
 };
 
+const cacheIsStale = function(index) {
+    for(let path in index) {
+        if(MEM_CACHE.get(path).modified < index[path].modified) {
+            return true;
+        }
+    }
+    return false;
+};
+
 global.KRELL_CACHE = {
     mem: () => MEM_CACHE,
     init: cacheInit,
@@ -258,15 +267,22 @@ var handleMessage = function(socket, data){
                 ret(socket);
             }
         }
-        if(req && req.type === "load-file") {
-            let path = req.value;
-            KRELL_CACHE.put(path, {
-                source: msg.form,
-                path: path,
-                modified: req.modified
-            });
-            if(typeof goog !== "undefined") {
-                goog.debugLoader_.written_[req.value] = true;
+        if(req) {
+            if(req.type === "load-file") {
+                let path = req.value;
+                KRELL_CACHE.put(path, {
+                    source: msg.form,
+                    path: path,
+                    modified: req.modified
+                });
+                if (typeof goog !== "undefined") {
+                    goog.debugLoader_.written_[req.value] = true;
+                }
+            }
+            if(req.type === "cache-compare") {
+                if(cacheIsStale(req.index)) {
+                    console.log("Cache is stale");
+                }
             }
         }
         // Android-specific hack to batch loads
