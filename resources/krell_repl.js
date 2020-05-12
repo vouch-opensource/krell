@@ -299,6 +299,7 @@ var tryConnection = function() {
             localPort: IS_ANDROID ? REPL_PORT : undefined,
             tls: false
         }, function(address) {
+            console.log("Connected to Krell REPL Server");
             CONNECTED = true;
         });
         initSocket(socket);
