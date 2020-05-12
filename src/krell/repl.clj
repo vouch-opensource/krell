@@ -199,6 +199,8 @@
   "Recompile the ClojureScript file specified by :path key in the first
   parameter. This is called by the watcher off the main thread."
   [repl-env {:keys [path] :as evt} opts]
+  (when-not (:main opts)
+    (throw (ex-info (str ":main namespace not supplied in build configuration") {})))
   (let [src      (util/to-file path)
         path-str (.getPath src)]
     (when (and (modified-source? repl-env evt)
