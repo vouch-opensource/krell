@@ -318,7 +318,7 @@
 (defn krell-compile
   [repl-env-var {:keys [repl-env-options options] :as cfg}]
   (gen/write-index-js options)
-  (gen/write-repl-js (apply repl-env-var repl-env-options) options)
+  (gen/write-repl-js (apply repl-env-var (mapcat identity repl-env-options)) options)
   (let [opt-level (:optimizations options)]
     (ana-api/with-passes
       (into ana-api/default-passes passes/custom-passes)
