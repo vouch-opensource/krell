@@ -1,16 +1,9 @@
-import {evaluate, onSourceLoad, onKrellReload} from './krell_repl.js';
+import {evaluate, onSourceLoad, onKrellReload, onKrellCacheInvalidate} from './krell_repl.js';
 
 var main = '$KRELL_MAIN_NS';
 
 function toPath(path) {
     return CLOSURE_BASE_PATH.replace("goog/", "") + path;
-}
-
-function nsToPath(ns) {
-    let segs = ns.split("."),
-        last = segs[segs.length-1];
-    segs[segs.length-1] = last + ".js";
-    return toPath(segs.join("/"));
 }
 
 function bootstrap() {
@@ -40,7 +33,7 @@ function waitForCore(cb) {
 
 function exists(obj, xs) {
     if(xs.length >= 1) {
-        var key = xs[0],
+        let key = xs[0],
             hasKey = obj.hasOwnProperty(key);
         if (xs.length === 1) {
             return hasKey;
@@ -66,7 +59,7 @@ function getIn(obj, xs) {
 }
 
 function getMainFn(ns) {
-    var xs = ns.split(".").concat(["_main"]),
+    let xs = ns.split(".").concat(["_main"]),
         fn = getIn(global, xs);
     if(fn) {
         return fn;
@@ -77,9 +70,9 @@ function getMainFn(ns) {
 
 function krellUpdateRoot(cb) {
     waitForCore(function() {
-        var xs = main.split(".");
+        let xs = main.split(".");
         if(!exists(global, xs)) {
-            var path = goog.debugLoader_.getPathFromDeps_(main);
+            let path = goog.debugLoader_.getPathFromDeps_(main);
             onSourceLoad(path, function() {
                 cb((props) => {
                     return getMainFn(main)(props);
@@ -96,8 +89,12 @@ function krellUpdateRoot(cb) {
     });
 }
 
+function krellStaleRoot(cb) {
+    onKrellCacheInvalidate(cb);
+}
+
 module.exports = {
+    krellStaleRoot: krellStaleRoot,
     krellUpdateRoot: krellUpdateRoot,
-    krellStaleRoot: function(cb) {},
     onKrellReload: onKrellReload
 };

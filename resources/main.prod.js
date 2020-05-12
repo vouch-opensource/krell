@@ -3,7 +3,7 @@ function krellUpdateRoot(cb) {
 }
 
 module.exports = {
-    krellUpdateRoot: krellUpdateRoot,
     krellStaleRoot: function(cb) {},
+    krellUpdateRoot: krellUpdateRoot,
     onKrellReload: function(cb) {}
 };

@@ -11,19 +11,19 @@ var RECONNECT_INTERVAL = 3000;
 var SERVER_IP = "$KRELL_SERVER_IP";
 var SERVER_PORT = $KRELL_SERVER_PORT;
 
-var IS_ANDROID = Platform.OS === "android";
-var REPL_PORT = IS_ANDROID ? 5003 : 5002;
+const IS_ANDROID = Platform.OS === "android";
 
-var evaluate = eval;
+const evaluate = eval;
 var libLoadListeners = {};
 var reloadListeners = [];
+var cacheInvalidateListeners = [];
 var pendingLoads_ = [];
 
 // =============================================================================
 // Caching Support
 
 var MEM_CACHE = new Map();
-var CACHE_PREFIX = "krell_cache:";
+const CACHE_PREFIX = "krell_cache:";
 
 const isKrellKey = (x) => {
     return x.indexOf(CACHE_PREFIX) === 0;
@@ -65,7 +65,6 @@ const cacheInit = async () => {
 };
 
 const cachePut = (path, entry) => {
-    console.log("CACHING:", path);
     MEM_CACHE.set(path, entry);
     AsyncStorage.setItem(krellPrefix(path), JSON.stringify(entry))
         .catch((err) => {
@@ -89,22 +88,35 @@ const cacheClear = async (all) => {
     }
 };
 
-const cacheHas = function(path) {
+const cacheHas = (path) => {
     return MEM_CACHE.has(path);
 };
 
-const cacheIsStale = function(index) {
-    for(let path in index) {
-        let entry = MEM_CACHE.get(path);
-        if(entry) {
-            if(entry.modified < index[path]) {
+const cacheIsStale = (index) => {
+    if(typeof index == "string") {
+        return index === "invalidate";
+    } else {
+        for (let path of MEM_CACHE.keys()) {
+            let entry = MEM_CACHE.get(path);
+            if (entry) {
+                console.log(path, entry.modified, index[path]);
+                if (entry.modified < index[path]) {
+                    return true;
+                }
+            } else {
                 return true;
             }
-        } else {
-            return true;
         }
+        return false;
     }
-    return false;
+};
+
+const onKrellCacheInvalidate = (cb) => {
+    cacheInvalidateListeners.push(cb);
+};
+
+const notifyCacheInvalidationListeners = () => {
+    cacheInvalidateListeners.forEach((cb) => cb());
 };
 
 global.KRELL_CACHE = {
@@ -124,8 +136,8 @@ cacheInit();
 
 var loadFileSocket = null;
 
-var loadFile = function(socket, path) {
-    var req = {
+const loadFile = (socket, path) => {
+    let req = {
             type: "load-file",
             value: path
         },
@@ -137,12 +149,12 @@ var loadFile = function(socket, path) {
     }
 };
 
-var exists_ = function(obj, xs) {
+const exists_ = (obj, xs) => {
     if(typeof xs == "string") {
         xs = xs.split(".");
     }
     if(xs.length >= 1) {
-        var key = xs[0],
+        let key = xs[0],
             hasKey = obj.hasOwnProperty(key);
         if (xs.length === 1) {
             return hasKey;
@@ -157,10 +169,10 @@ var exists_ = function(obj, xs) {
     }
 };
 
-var pathToIds_ = function() {
-    var pathToIds = {};
-    for(var id in goog.debugLoader_.idToPath_) {
-        var path = goog.debugLoader_.idToPath_[id];
+const pathToIds_ = () => {
+    let pathToIds = {};
+    for(let id in goog.debugLoader_.idToPath_) {
+        let path = goog.debugLoader_.idToPath_[id];
         if(pathToIds[path] == null) {
             pathToIds[path] = [];
         }
@@ -169,9 +181,9 @@ var pathToIds_ = function() {
     return pathToIds;
 };
 
-var isLoaded_ = function(path, index) {
-    var ids = index[path];
-    for(var i = 0; i < ids.length; i++) {
+const isLoaded_ = (path, index) => {
+    let ids = index[path];
+    for(let i = 0; i < ids.length; i++) {
         if(exists_(global, ids[i])) {
             return true;
         }
@@ -179,8 +191,8 @@ var isLoaded_ = function(path, index) {
     return false;
 };
 
-var flushLoads_ = function(socket) {
-    var index    = pathToIds_(),
+const flushLoads_ = (socket) => {
+    let index    = pathToIds_(),
         filtered = pendingLoads_.filter(function(req) {
                        return !isLoaded_(req.value, index);
                    }).map(function(req) {
@@ -215,8 +227,8 @@ global.require = function(x) {
     return npmDeps[x] || krellNpmDeps[x] || assets[x];
 };
 
-var notifyListeners = function(request) {
-    var path = request.value,
+const notifyListeners = (request) => {
+    let path = request.value,
         xs = libLoadListeners[path] || [];
 
     xs.forEach(function (x) {
@@ -224,24 +236,24 @@ var notifyListeners = function(request) {
     });
 };
 
-var notifyReloadListeners = function() {
+const notifyReloadListeners = () => {
     reloadListeners.forEach(function(x) {
         x();
     });
 };
 
-var onSourceLoad = function(path, cb) {
+const onSourceLoad = (path, cb) => {
     if(typeof libLoadListeners[path] === "undefined") {
         libLoadListeners[path] = [];
     }
     libLoadListeners[path].push(cb);
 };
 
-var onKrellReload = function(cb) {
+const onKrellReload = (cb) => {
     reloadListeners.push(cb);
 };
 
-var errString = function(err) {
+const errString = (err) => {
     if(typeof cljs !== "undefined") {
         if(typeof cljs.repl !== "undefined") {
             cljs.repl.error__GT_str(err)
@@ -253,7 +265,7 @@ var errString = function(err) {
     }
 };
 
-var handleMessage = function(socket, data){
+const handleMessage = (socket, data) => {
     var req = null,
         err = null,
         ret = null;
@@ -261,7 +273,7 @@ var handleMessage = function(socket, data){
     data = data.replace(/\0/g, "");
 
     try {
-        var msg = JSON.parse(data);
+        let msg = JSON.parse(data);
         req = msg.request;
         if(msg.form) {
             ret = evaluate(msg.form);
@@ -286,8 +298,8 @@ var handleMessage = function(socket, data){
             }
             if(req.type === "cache-compare") {
                 if(cacheIsStale(req.index)) {
-                    // TODO: clear Krell cache
-                    // TODO: let the root know
+                    KRELL_CACHE.clear();
+                    notifyCacheInvalidationListeners();
                     console.log("Cache is stale");
                 } else {
                     console.log("Cache is up-to-date")
@@ -347,7 +359,7 @@ var handleMessage = function(socket, data){
     }
 };
 
-var initSocket = function(socket) {
+const initSocket = (socket) => {
     var buffer = "";
     // it doesn't matter which socket we use for loads
     loadFileSocket = socket;
@@ -389,7 +401,7 @@ var initSocket = function(socket) {
 };
 
 // Loop to connect from client to server
-var tryConnection = function() {
+const tryConnection = () => {
     if(!CONNECTED) {
         var socket = TcpSocket.createConnection({
             host: SERVER_IP,
@@ -408,7 +420,8 @@ var tryConnection = function() {
 tryConnection();
 
 module.exports = {
-    onSourceLoad: onSourceLoad,
+    evaluate: evaluate,
     onKrellReload: onKrellReload,
-    evaluate: evaluate
+    onKrellCacheInvalidate: onKrellCacheInvalidate,
+    onSourceLoad: onSourceLoad
 };
