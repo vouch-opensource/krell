@@ -268,8 +268,7 @@ var tryConnection = function() {
         var socket = TcpSocket.createConnection({
             host: SERVER_IP,
             port: SERVER_PORT,
-            localPort: IS_ANDROID ? REPL_PORT : undefined,
-            tls: false
+            tls: false,
         }, function(address) {
             console.log("Connected to Krell REPL Server");
             CONNECTED = true;
