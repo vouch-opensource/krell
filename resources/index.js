@@ -55,7 +55,6 @@ class KrellRoot extends React.Component {
             krell.setState(newState);
         });
         krellStaleRoot(() => {
-            console.log("STALE ROOT");
             let newState = Object.assign({}, krell.state);
             newState.stale = true;
             krell.setState(newState);
