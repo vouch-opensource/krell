@@ -24,6 +24,7 @@
 
 (declare load-queued-files)
 
+;; TODO: refactor this into send-message later
 (defn rn-eval
   "Evaluate a JavaScript string in the React Native REPL"
   ([repl-env js]
@@ -94,7 +95,7 @@
    (rn-eval repl-env nil
      (merge
        {:type "cache-compare"
-        :request {:index (last-modified-index opts)}}))))
+        :index (last-modified-index opts)}))))
 
 (defn load-javascript
   "Load a Closure JavaScript file into the React Native REPL"
