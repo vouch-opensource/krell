@@ -281,6 +281,8 @@ var handleMessage = function(socket, data){
             }
             if(req.type === "cache-compare") {
                 if(cacheIsStale(req.index)) {
+                    // TODO: clear Krell cache
+                    // TODO: let the root know
                     console.log("Cache is stale");
                 }
             }
