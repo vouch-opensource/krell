@@ -313,7 +313,7 @@ const handleMessage = (socket, data) => {
             flushLoads_(socket);
         }
     } catch (e) {
-        console.error(e, msg.form);
+        console.error(e);
         if(req && req.type === "load-file") {
             console.log("Failed to load file:", req.value);
         }
