@@ -78,7 +78,7 @@ const cacheClear = async (all) => {
         AsyncStorage.clear();
     } else {
         for (let cacheKey of cacheKeys) {
-            AsyncStorage.removeItem(cacheKeys);
+            AsyncStorage.removeItem(cacheKey);
         }
     }
 };
