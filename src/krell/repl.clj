@@ -258,6 +258,14 @@
     (when-not (:done @state)
       (recur repl-env server-socket))))
 
+(defn last-modified-index
+  [opts]
+  (into {}
+    (map (fn [[k v]] [(.getPath ^File (:out-file v)) (:modified v)]))
+    (deps/deps->graph
+      (deps/with-out-files
+        (deps/all-deps (ana-api/current-state) (:main opts) opts) opts))))
+
 (defn setup
   ([repl-env] (setup repl-env nil))
   ([{:keys [options state socket] :as repl-env} opts]
