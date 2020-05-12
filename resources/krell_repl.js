@@ -95,7 +95,12 @@ const cacheHas = function(path) {
 
 const cacheIsStale = function(index) {
     for(let path in index) {
-        if(MEM_CACHE.get(path).modified < index[path].modified) {
+        let entry = MEM_CACHE.get(path);
+        if(entry) {
+            if(entry.modified < index[path]) {
+                return true;
+            }
+        } else {
             return true;
         }
     }
@@ -284,6 +289,8 @@ var handleMessage = function(socket, data){
                     // TODO: clear Krell cache
                     // TODO: let the root know
                     console.log("Cache is stale");
+                } else {
+                    console.log("Cache is up-to-date")
                 }
             }
         }

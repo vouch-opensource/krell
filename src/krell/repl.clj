@@ -294,6 +294,8 @@
          (bound-fn [e] (recompile repl-env e opts))
          (:watch-dirs options))
        (watcher/watch)))
+   ;; Compare cache w/ client
+   (cache-compare repl-env opts)
    ;; compile cljs.core & its dependencies, goog/base.js must be available
    ;; for bootstrap to load, use new closure/compile as it can handle
    ;; resources in JARs
