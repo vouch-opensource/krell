@@ -88,7 +88,7 @@ const cacheHas = function(path) {
 };
 
 global.KRELL_CACHE = {
-    mem: MEM_CACHE,
+    mem: () => MEM_CACHE,
     init: cacheInit,
     put: cachePut,
     get: cacheGet,
