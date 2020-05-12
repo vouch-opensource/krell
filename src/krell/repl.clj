@@ -150,8 +150,7 @@
    (let [output-dir (io/file (:output-dir opts))
          env        (ana-api/empty-env)
          cljs-deps  (io/file output-dir "cljs_deps.js")
-         repl-deps  (io/file output-dir "krell_repl_deps.js")
-         base-path  (.getPath (io/file (:output-dir opts) "goog"))]
+         repl-deps  (io/file output-dir "krell_repl_deps.js")]
      ;; Only ever load goog base *once*, all the dep
      ;; graph stuff is there an it needs to be preserved
      (when-not (base-loaded? repl-env)
