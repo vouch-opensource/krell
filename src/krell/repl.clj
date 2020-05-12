@@ -31,7 +31,7 @@
   ([{:keys [options] :as repl-env} js request]
    (locking eval-lock
      (when (and (= "load-file" (:type request))
-                (:verbose (ana-api/get-options)))
+                (:krell/verbose (ana-api/get-options)))
        (println "Load file:" (:value request)))
      (let [{:keys [out]} @(:socket repl-env)]
        (net/write out
@@ -194,6 +194,8 @@
   "Recompile the ClojureScript file specified by :path key in the first
   parameter. This is called by the watcher off the main thread."
   [repl-env {:keys [path] :as evt} opts]
+  (when-not (:main opts)
+    (throw (ex-info (str ":main namespace not supplied in build configuration") {})))
   (let [src      (util/to-file path)
         path-str (.getPath src)]
     (when (and (modified-source? repl-env evt)
@@ -250,11 +252,9 @@
   [{:keys [socket state] :as repl-env} server-socket]
   (when-let [conn (try (.accept server-socket) (catch Throwable _))]
     (.setKeepAlive conn true)
-    ;; TODO: just ignoring new connections for now, maybe we want to do
-    ;; something else? i.e. the current socket was closed because of a RN
-    ;; reload
-    (when-not @socket
-      (reset! socket (net/socket->socket-map conn)))
+    (when-let [sock @socket]
+      (future (net/close-socket sock)))
+    (reset! socket (net/socket->socket-map conn))
     (when-not (:done @state)
       (recur repl-env server-socket))))
 

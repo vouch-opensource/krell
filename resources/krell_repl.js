@@ -6,7 +6,6 @@ import { assets } from "./krell_assets.js";
 import AsyncStorage from "@react-native-community/async-storage";
 
 var CONNECTED = false;
-var IPV4 = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
 var RECONNECT_INTERVAL = 3000;
 
 var SERVER_IP = "$KRELL_SERVER_IP";
@@ -343,12 +342,14 @@ var initSocket = function(socket) {
     });
 
     socket.on("error", error => {
-        console.log("An error ocurred with client socket ", error);
+        socket.destroy();
+        console.log("An error occurred with client socket:", error);
     });
 
     socket.on("close", error => {
+        socket.destroy();
         if (CONNECTED) {
-            console.log("Closed connection with ", socket.address());
+            console.log("Closed connection with", socket.address());
         }
         CONNECTED = false;
         setTimeout(tryConnection, RECONNECT_INTERVAL);
@@ -361,9 +362,9 @@ var tryConnection = function() {
         var socket = TcpSocket.createConnection({
             host: SERVER_IP,
             port: SERVER_PORT,
-            localPort: IS_ANDROID ? REPL_PORT : undefined,
-            tls: false
+            tls: false,
         }, function(address) {
+            console.log("Connected to Krell REPL Server");
             CONNECTED = true;
         });
         initSocket(socket);
