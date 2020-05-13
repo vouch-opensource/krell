@@ -53,14 +53,6 @@ clj -m cljs.main --install-deps
 
 Switch into the `ios` directory of your project and run `pod install`.
 
-Ensure that you have the following permissions set in your `AndroidManifest.xml`:
-
-```
-<uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
-<uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-<uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
-```
-
 On Android you should modify your AsyncStorage settings in `android/gradle.properties`.
 This is only necessary for REPL driven development:
 
