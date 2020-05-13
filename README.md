@@ -92,7 +92,7 @@ requires restarting the REPL.
 
 Other than that there are no other limitations. The handling of `js/require` is
 implemented as an analyzer pass so if you want to create macros to generate
-asset requires that will work.
+asset requires, that will work.
 
 ## Examples
 
