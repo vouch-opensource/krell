@@ -387,18 +387,7 @@ const initSocket = (socket) => {
         } else {
             data = buffer + data;
             buffer = "";
-
-            if (data) {
-                socket.write(JSON.stringify({type: "ack"}) + "\0", "utf8", function () {
-                    // on Android must serialize the write to avoid out of
-                    // order arrival, also callback never gets invoked on iOS
-                    // - bug in react-native-tcp-socket
-                    if(IS_ANDROID) handleMessage(socket, data);
-                });
-                // No issues with multiple write in one turn of the event loop
-                // on iOS and avoids the bug mentioned in above comment
-                if(!IS_ANDROID) handleMessage(socket, data);
-            }
+            handleMessage(socket, data);
         }
     });
 

@@ -41,26 +41,21 @@
              ;; if there was client driven request then pass on this
              ;; information back to the client
              (when request {:request request}))))
-       ;; assume transfer won't be slower than 100K/s on a local network
-       (let [ack (.poll results-queue
-                   (max 1 (quot (count js) (* 100 1024))) TimeUnit/SECONDS)]
-         (if (or (nil? ack) (not= "ack" (:type ack)))
-           (throw (ex-info "Connection lost" {:type :no-ack :queue-value ack}))
-           (let [result (.take results-queue)
-                 ret (condp = (:status result)
-                       "success"
-                       {:status :success
-                        :value  (:value result)}
+       (let [result (.take results-queue)
+             ret (condp = (:status result)
+                   "success"
+                   {:status :success
+                    :value  (:value result)}
 
-                       "exception"
-                       {:status :exception
-                        :value  (:value result)}
-                       (throw
-                         (ex-info
-                           (str "Unexpected message type: "
-                             (pr-str (:status result)) )
-                           {:queue-value result})))]
-             ret)))))))
+                   "exception"
+                   {:status :exception
+                    :value  (:value result)}
+                   (throw
+                     (ex-info
+                       (str "Unexpected message type: "
+                         (pr-str (:status result)))
+                       {:queue-value result})))]
+         ret)))))
 
 ;; TODO: fix for Windows, .getPath won't return a URL style path
 (defn send-file
@@ -113,7 +108,6 @@
           (let [{:keys [type value] :as event}
                 (json/read-str res :key-fn keyword)]
             (case type
-              "ack"       (.offer results-queue event)
               "load-file" (.offer load-queue event)
               "result"    (.offer results-queue event)
               (when-let [stream (if (= type "out") *out* *err*)]
