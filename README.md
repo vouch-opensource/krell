@@ -87,8 +87,8 @@ asset support is intended to align with React Native's own documentation - you
 must use static relative paths. The additional support for Node.js dependencies
 is useful when transitioning away from re-natal to Krell.
 
-It's important to note that adding a new asset or new Node library requires
-restarting the REPL.
+It's important to note that adding a new asset or new Node library currently 
+requires restarting the REPL.
 
 Other than that there are no other limitations. The handling of `js/require` is
 implemented as an analyzer pass so if you want to create macros to generate
