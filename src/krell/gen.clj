@@ -5,7 +5,8 @@
             [clojure.string :as string]
             [krell.assets :as assets]
             [krell.net :as net]
-            [krell.util :as util]))
+            [krell.util :as util])
+  (:import [java.io File]))
 
 (defn write-index-js
   "Write the Krell index.js file which bootstraps the Krell application.
@@ -25,13 +26,21 @@
           (string/replace "$KRELL_OUTPUT_TO" (:output-to opts))
           (string/replace "$KRELL_OUTPUT_DIR" (:output-dir opts)))))))
 
+(defn contents-equal? [f content]
+  (= (slurp f) content))
+
+(defn write-if-different [^File f content]
+  (when-not (and (.exists f)
+                 (contents-equal? f content))
+    (spit f content)))
+
 (defn write-repl-js
   "Write out the REPL support code. See resources/krell_repl.js"
   [repl-env opts]
   (let [source   (slurp (io/resource "krell_repl.js"))
         out-file (io/file (:output-dir opts) "krell_repl.js")]
     (util/mkdirs out-file)
-    (spit out-file
+    (write-if-different out-file
       (-> source
         (string/replace "$KRELL_SERVER_IP" (net/get-ip))
         (string/replace "$KRELL_SERVER_PORT" (-> repl-env :options :port str))
@@ -43,7 +52,7 @@
   [assets opts]
   (let [out-file (io/file (:output-dir opts) "krell_assets.js")]
     (util/mkdirs out-file)
-    (spit out-file (assets/assets-js assets))))
+    (write-if-different out-file (assets/assets-js assets))))
 
 (defn export-dep [dep]
   (str "\""dep "\": require('" dep "')" ))
@@ -62,7 +71,7 @@
   [node-requires opts]
   (let [out-file (io/file (:output-dir opts) "krell_npm_deps.js")]
     (util/mkdirs out-file)
-    (spit out-file (krell-npm-deps-js node-requires))))
+    (write-if-different out-file (krell-npm-deps-js node-requires))))
 
 (defn goog-require-str [sym]
   (str "goog.require(\"" (comp-api/munge sym) "\");"))
