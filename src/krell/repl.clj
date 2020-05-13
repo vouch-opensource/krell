@@ -60,8 +60,6 @@
                            (str "Unexpected message type: "
                              (pr-str (:status result)) )
                            {:queue-value result})))]
-             ;; load any queued files now to simulate sync loads
-             (load-queued-files repl-env)
              ret)))))))
 
 ;; TODO: fix for Windows, .getPath won't return a URL style path
@@ -76,11 +74,14 @@
         :modified (util/last-modified f)}
        request))))
 
-(defn load-queued-files [repl-env]
-  (loop [{:keys [value] :as load-file-req} (.poll load-queue)]
-    (when load-file-req
-      (send-file repl-env (io/file value) load-file-req)
-      (recur (.poll load-queue)))))
+(defn send-file-loop
+  [{:keys [state] :as repl-env}]
+  (while (not (:done @state))
+    (try
+      (when-let [{:keys [value] :as load-file-req} (.poll load-queue)]
+        (send-file repl-env (io/file value) load-file-req))
+      (catch Throwable e
+        (println e)))))
 
 (defn last-modified-index
   [opts]
@@ -281,7 +282,11 @@
      (.start
        (Thread.
          (bound-fn []
-           (server-loop repl-env (net/create-server-socket port))))))
+           (server-loop repl-env (net/create-server-socket port)))))
+     (.start
+       (Thread.
+         (bound-fn []
+           (send-file-loop repl-env)))))
    (while (not @socket)
      (Thread/sleep 500))
    (.start (Thread. (bound-fn [] (event-loop repl-env))))
