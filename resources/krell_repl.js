@@ -77,6 +77,20 @@ const cacheGet = (path) => {
     return MEM_CACHE.get(path);
 };
 
+global.CLOSURE_BASE_PATH = "$CLOSURE_BASE_PATH";
+
+function toPath(path) {
+    return CLOSURE_BASE_PATH.replace("goog/", "") + path;
+}
+
+// these things are going to change during a single REPL session
+const excludes = {
+    [toPath("goog/base.js")]: true,
+    [toPath("goog/deps.js")]: true,
+    [toPath("cljs_deps.js")]: true,
+    [toPath("krell_repl_deps.js")]: true
+};
+
 const cacheClear = async (all) => {
     let cacheKeys = MEM_CACHE.keys();
     MEM_CACHE = new Map();
@@ -84,8 +98,10 @@ const cacheClear = async (all) => {
         AsyncStorage.clear();
     } else {
         for (let cacheKey of cacheKeys) {
-            console.log("CACHE DELETE", cacheKey);
-            AsyncStorage.removeItem(krellPrefix(cacheKey));
+            if(!excludes[cacheKey]) {
+                console.log("CACHE DELETE:", cacheKey);
+                AsyncStorage.removeItem(krellPrefix(cacheKey));
+            }
         }
     }
 };
@@ -205,7 +221,6 @@ const flushLoads_ = (socket) => {
 };
 
 global.CLOSURE_NO_DEPS = true;
-global.CLOSURE_BASE_PATH = "$CLOSURE_BASE_PATH";
 
 // NOTE: CLOSURE_LOAD_FILE_SYNC not needed as ClojureScript now transpiles
 // offending goog.module files that would need runtime transpiler support

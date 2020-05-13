@@ -28,7 +28,9 @@ function bootstrap() {
 }
 
 function waitForCore(cb) {
-    if(KRELL_CACHE.has(nsToPath(main)) && KRELL_CACHE.ready) {
+    // we only care if goog/base.js is actually in the cache, that's enough
+    // to bootstrap regardless whether some things must be refetched
+    if(KRELL_CACHE.ready && KRELL_CACHE.has(toPath("goog/base.js"))) {
         bootstrap();
         cb();
     } else if(typeof cljs !== 'undefined') {
