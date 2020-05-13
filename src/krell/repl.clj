@@ -32,7 +32,7 @@
   ([{:keys [options] :as repl-env} js request]
    (locking eval-lock
      (when (and (= "load-file" (:type request))
-                (:krell/verbose (ana-api/get-options)))
+                (:krell/verbose options))
        (println "Load file:" (:value request)))
      (let [{:keys [out]} @(:socket repl-env)]
        (net/write out
