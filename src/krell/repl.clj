@@ -11,7 +11,6 @@
             [clojure.string :as string]
             [krell.deps :as deps]
             [krell.gen :as gen]
-            [krell.mdns :as mdns]
             [krell.net :as net]
             [krell.passes :as passes]
             [krell.util :as util]
@@ -25,6 +24,7 @@
 
 (declare load-queued-files)
 
+;; TODO: refactor this into send-message later
 (defn rn-eval
   "Evaluate a JavaScript string in the React Native REPL"
   ([repl-env js]
@@ -60,16 +60,43 @@
                            (str "Unexpected message type: "
                              (pr-str (:status result)) )
                            {:queue-value result})))]
-             ;; load any queued files now to simulate sync loads
-             (load-queued-files repl-env)
              ret)))))))
 
-(defn load-queued-files [repl-env]
-  (loop [{:keys [value] :as load-file-req} (.poll load-queue)]
-    (when load-file-req
-      (let [f (io/file value)]
-       (rn-eval repl-env (slurp f) load-file-req))
-      (recur (.poll load-queue)))))
+;; TODO: fix for Windows, .getPath won't return a URL style path
+(defn send-file
+  ([repl-env f opts]
+   (send-file repl-env f nil opts))
+  ([repl-env f request opts]
+   (rn-eval repl-env (slurp f)
+     (merge
+       {:type     "load-file"
+        :value    (.getPath f)
+        :modified (util/last-modified f)}
+       request))))
+
+(defn send-file-loop
+  [{:keys [state] :as repl-env}]
+  (while (not (:done @state))
+    (try
+      (when-let [{:keys [value] :as load-file-req} (.poll load-queue)]
+        (send-file repl-env (io/file value) load-file-req))
+      (catch Throwable e
+        (println e)))))
+
+(defn last-modified-index
+  [opts]
+  (into {}
+    (map (fn [[k v]] [(.getPath ^File (:out-file v)) (:modified v)]))
+    (deps/deps->graph
+      (deps/with-out-files
+        (deps/all-deps (ana-api/current-state) (:main opts) opts) opts))))
+
+(defn cache-compare
+  ([repl-env opts]
+   (rn-eval repl-env nil
+     (merge
+       {:type "cache-compare"
+        :index (last-modified-index opts)}))))
 
 (defn load-javascript
   "Load a Closure JavaScript file into the React Native REPL"
@@ -115,12 +142,8 @@
   (doseq [ijs (-> (deps/sorted-deps
                     (ana-api/current-state) 'cljs.core opts)
                 (deps/with-out-files opts))]
-    (let [out-file (:out-file ijs)
-          contents (slurp out-file)]
-      (rn-eval repl-env contents
-        {:type  "load-file"
-         :ns    (-> ijs :provides first)
-         :value (.getPath ^File out-file)}))))
+    (send-file repl-env (:out-file ijs)
+      {:ns (-> ijs :provides first)})))
 
 (defn init-js-env
   ([repl-env]
@@ -129,24 +152,15 @@
    (let [output-dir (io/file (:output-dir opts))
          env        (ana-api/empty-env)
          cljs-deps  (io/file output-dir "cljs_deps.js")
-         repl-deps  (io/file output-dir "krell_repl_deps.js")
-         base-path  (.getPath (io/file (:output-dir opts) "goog"))]
-     ;; prevent auto-loading of deps.js - not really necessary since
-     ;; we write our own and it will override google's dep.js entries
-     (rn-eval repl-env
-       "var CLOSURE_NO_DEPS = true;")
-     (rn-eval repl-env
-       (str "var CLOSURE_BASE_PATH = \"" base-path File/separator "\";"))
+         repl-deps  (io/file output-dir "krell_repl_deps.js")]
      ;; Only ever load goog base *once*, all the dep
      ;; graph stuff is there an it needs to be preserved
      (when-not (base-loaded? repl-env)
-       (rn-eval repl-env
-         (slurp (io/resource "goog/base.js")))
-       (rn-eval repl-env
-         (slurp (io/resource "goog/deps.js"))))
-     (rn-eval repl-env (slurp repl-deps))
+       (send-file repl-env (io/file output-dir "goog/base.js") opts)
+       (send-file repl-env (io/file output-dir "goog/deps.js") opts))
+     (send-file repl-env repl-deps opts)
      (when (.exists cljs-deps)
-       (rn-eval repl-env (slurp cljs-deps)))
+       (send-file repl-env cljs-deps opts))
      (when-not (core-loaded? repl-env)
        ;; We cannot rely on goog.require because the debug loader assumes
        ;; you can load script synchronously which isn't possible in React
@@ -156,9 +170,6 @@
        (repl/evaluate-form repl-env env "<cljs repl>"
          '(enable-console-print!))
        (bootstrap/install-repl-goog-require repl-env env))
-     (rn-eval repl-env
-       (str "goog.global.CLOSURE_UNCOMPILED_DEFINES = "
-         (json/write-str (:closure-defines opts)) ";"))
      ;; setup printing
      (repl/evaluate-form repl-env env "<cljs repl>"
        '((fn []
@@ -235,10 +246,7 @@
                          (build-api/target-file-for-cljs-ns
                            (:ns ijs) (:output-dir opts)) opts)))
                    (if (empty? @warns)
-                     (rn-eval repl-env (slurp dest)
-                       {:type   "load-file"
-                        :reload true
-                        :value  (.getPath dest)})
+                     (send-file repl-env dest {:reload true})
                      ;; TODO: it may be that warns strings have chars that will break console.warn ?
                      ;; TODO: also warn at REPL
                      (let [pre (str "Could not reload " (:ns ns-info) ":")]
@@ -271,12 +279,14 @@
   ([{:keys [options state socket] :as repl-env} opts]
    (let [port (:port options)]
      (println "\nWaiting for device connection on port" port)
-     ;; TODO: put mdns into the state so we can cleanup in REPL teardown
-     (mdns/register-service (mdns/jmdns) (mdns/krell-service-info port))
      (.start
        (Thread.
          (bound-fn []
-           (server-loop repl-env (net/create-server-socket port))))))
+           (server-loop repl-env (net/create-server-socket port)))))
+     (.start
+       (Thread.
+         (bound-fn []
+           (send-file-loop repl-env)))))
    (while (not @socket)
      (Thread/sleep 500))
    (.start (Thread. (bound-fn [] (event-loop repl-env))))
@@ -289,6 +299,8 @@
          (bound-fn [e] (recompile repl-env e opts))
          (:watch-dirs options))
        (watcher/watch)))
+   ;; Compare cache w/ client
+   (cache-compare repl-env opts)
    ;; compile cljs.core & its dependencies, goog/base.js must be available
    ;; for bootstrap to load, use new closure/compile as it can handle
    ;; resources in JARs
@@ -386,7 +398,7 @@
                       {:group ::cli/main
                        :fn    port-opt
                        :arg   "number"
-                       :doc   (str "When ---mdns is false, sets port for target clients to bind to.")}
+                       :doc   (str "Sets port for target clients to bind to.")}
                       ["-rc" "--recompile"]
                       {:group ::cli/main
                        :fn    recompile-opt

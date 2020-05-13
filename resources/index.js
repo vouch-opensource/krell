@@ -7,7 +7,13 @@ import {
     Text
 } from 'react-native';
 import {name as appName} from './app.json';
-import {krellUpdateRoot, onKrellReload} from './$KRELL_OUTPUT_TO';
+import {krellUpdateRoot, krellStaleRoot, onKrellReload} from './$KRELL_OUTPUT_TO';
+
+let plainStyle = {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center'
+};
 
 /*
  * Establish a root that works for REPL based dev / prod. In the REPL case
@@ -17,37 +23,47 @@ import {krellUpdateRoot, onKrellReload} from './$KRELL_OUTPUT_TO';
 class KrellRoot extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {loaded: false, root: null, tx: 0};
+        this.state = {loaded: false, stale: false, root: null, tx: 0};
     }
 
     render() {
         if (!this.state.loaded) {
-            let plainStyle = {
-                flex: 1,
-                alignItems: 'center',
-                justifyContent: 'center'
-            };
             return (
                 <View style={plainStyle}>
                     <Text>Waiting for Krell to load files.</Text>
                 </View>
             );
+        } else {
+            if (this.state.stale) {
+                return (
+                    <View style={plainStyle}>
+                        <Text>Application is stale. Refresh to get the latest.</Text>
+                    </View>
+                );
+            } else {
+                return this.state.root(this.props);
+            }
         }
-        return this.state.root(this.props);
     }
 
     componentDidMount() {
         let krell = this;
         krellUpdateRoot((appRoot) => {
-            krell.setState({root: appRoot, loaded: true});
+            let newState = Object.assign({}, krell.state);
+            newState.root = appRoot;
+            newState.loaded = true;
+            krell.setState(newState);
+        });
+        krellStaleRoot(() => {
+            let newState = Object.assign({}, krell.state);
+            newState.stale = true;
+            krell.setState(newState);
         });
         onKrellReload(() => {
             krell.setState((state, props) => {
-                return {
-                    loaded: state.loaded,
-                    root: state.root,
-                    tx: state.tx+1
-                }
+                let newState = Object.assign({}, state);
+                newState.tx++;
+                return newState;
             });
         });
     }

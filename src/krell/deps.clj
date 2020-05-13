@@ -5,7 +5,8 @@
             [cljs.closure :as closure]
             [cljs.module-graph :as mg]
             [cljs.repl :as repl]
-            [clojure.java.io :as io])
+            [clojure.java.io :as io]
+            [krell.util :as util])
   (:import [java.io File]))
 
 (defn all-deps
@@ -53,7 +54,11 @@
       (io/file (:output-dir opts) (closure/rel-output-path dep)))))
 
 (defn add-out-file [dep opts]
-  (assoc dep :out-file (get-out-file dep opts)))
+  (let [out-file (get-out-file dep opts)]
+    (merge dep
+     {:out-file out-file}
+      (when (.exists out-file)
+        {:modified (util/last-modified out-file)}))))
 
 (defn with-out-files
   "Given a list of deps return a new list of deps with :out-file property

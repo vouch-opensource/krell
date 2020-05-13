@@ -3,7 +3,7 @@
             [clojure.java.io :as io]
             [clojure.string :as string])
   (:import [java.io File]
-           [java.net URL]
+           [java.net URL URLDecoder]
            [java.nio.file Path]))
 
 (defn now
@@ -46,7 +46,7 @@
 (defn to-path ^Path [^File f]
   (.toPath f))
 
-(defn relativize [^File source ^File target]
+(defn relativize ^File [^File source ^File target]
   (to-file (.relativize (to-path source) (to-path target))))
 
 (defn get-path [^File f]
@@ -73,3 +73,6 @@
 (defn ns->cache-file [ns {:keys [output-dir] :as opts}]
   (let [f (build-api/target-file-for-cljs-ns ns output-dir)]
     (io/file (str (string/replace (.getPath f) #".js$" "") ".cljs.cache.json"))))
+
+(defn closure-relative-path [file-path opts]
+  (.getPath (relativize (io/file (:output-dir opts) "goog") (io/file file-path))))
