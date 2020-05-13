@@ -66,7 +66,7 @@ const cacheInit = async () => {
 
 const cachePut = (path, entry) => {
     MEM_CACHE.set(path, entry);
-    console.log("CACHE PUT:", path, entry.modified);
+    //console.log("CACHE PUT:", path, entry.modified);
     AsyncStorage.setItem(krellPrefix(path), JSON.stringify(entry))
         .catch((err) => {
             console.log("Could not cache path:", path, "error:", err);
@@ -99,7 +99,7 @@ const cacheClear = async (all) => {
     } else {
         for (let cacheKey of cacheKeys) {
             if(!excludes[cacheKey]) {
-                console.log("CACHE DELETE:", cacheKey);
+                //console.log("CACHE DELETE:", cacheKey);
                 AsyncStorage.removeItem(krellPrefix(cacheKey));
             }
         }
@@ -117,7 +117,7 @@ const cacheIsStale = (index) => {
         for (let path of MEM_CACHE.keys()) {
             let entry = MEM_CACHE.get(path);
             if (entry) {
-                console.log(path, entry.modified, index[path]);
+                //console.log(path, entry.modified, index[path]);
                 if (entry.modified < index[path]) {
                     return true;
                 }
@@ -317,9 +317,9 @@ const handleMessage = (socket, data) => {
                 if(cacheIsStale(req.index)) {
                     KRELL_CACHE.clear();
                     notifyCacheInvalidationListeners();
-                    console.log("Cache is stale");
+                    console.log("Krell cache is stale");
                 } else {
-                    console.log("Cache is up-to-date")
+                    console.log("Krell cache is up-to-date")
                 }
             }
         }
