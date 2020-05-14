@@ -153,6 +153,7 @@ cacheInit();
 // REPL Server
 
 var loadFileSocket = null;
+var scheduled = null;
 
 const loadFile = (socket, path) => {
     let req = {
@@ -163,7 +164,9 @@ const loadFile = (socket, path) => {
     if (!IS_ANDROID) {
         socket.write(payload);
     } else {
-        pendingLoads_.push(req)
+        pendingLoads_.push(req);
+        if(scheduled) clearTimeout(scheduled);
+        scheduled = setTimeout(() => flushLoads_(loadFileSocket), 250);
     }
 };
 
@@ -322,10 +325,6 @@ const handleMessage = (socket, data) => {
                     console.log("Krell cache is up-to-date")
                 }
             }
-        }
-        // Android-specific hack to batch loads
-        if (pendingLoads_.length > 0) {
-            flushLoads_(socket);
         }
     } catch (e) {
         console.error(e);

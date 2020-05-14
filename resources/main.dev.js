@@ -1,4 +1,9 @@
-import {evaluate, onSourceLoad, onKrellReload, onKrellCacheInvalidate} from './krell_repl.js';
+import {
+    evaluate,
+    onSourceLoad,
+    onKrellReload,
+    onKrellCacheInvalidate
+} from './krell_repl.js';
 
 var main = '$KRELL_MAIN_NS';
 
