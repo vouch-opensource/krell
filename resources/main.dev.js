@@ -82,6 +82,7 @@ function krellUpdateRoot(cb) {
         let xs = main.split(".");
         if(!exists(global, xs)) {
             let path = goog.debugLoader_.getPathFromDeps_(main);
+            console.log("Namespace", main, "not loaded, fetching:", path);
             onSourceLoad(path, function() {
                 cb((props) => {
                     return getMainFn(main)(props);
@@ -91,6 +92,7 @@ function krellUpdateRoot(cb) {
             $CLJS_PRELOADS
             goog.require(main);
         } else {
+            console.log("Namespace", main, "already loaded")
             cb((props) => {
                 return getMainFn(main)(props);
             });
