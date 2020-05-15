@@ -78,6 +78,7 @@
       (catch Throwable e
         (println e)))))
 
+;; TODO: fix for Windows, getPath won't return a URL style path
 (defn last-modified-index
   [opts]
   (into {}
