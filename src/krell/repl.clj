@@ -73,7 +73,7 @@
   [{:keys [state] :as repl-env}]
   (while (not (:done @state))
     (try
-      (when-let [{:keys [value] :as load-file-req} (.poll load-queue)]
+      (when-let [{:keys [value] :as load-file-req} (.take load-queue)]
         (send-file repl-env (io/file value) load-file-req))
       (catch Throwable e
         (println e)))))
