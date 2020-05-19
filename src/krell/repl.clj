@@ -61,13 +61,15 @@
 (defn send-file
   ([repl-env f opts]
    (send-file repl-env f nil opts))
-  ([repl-env f request opts]
-   (rn-eval repl-env (slurp f)
-     (merge
-       {:type     "load-file"
-        :value    (.getPath f)
-        :modified (util/last-modified f)}
-       request))))
+  ([repl-env ^File f request opts]
+   (if (.exists f)
+     (rn-eval repl-env (slurp f)
+       (merge
+         {:type     "load-file"
+          :value    (.getPath f)
+          :modified (util/last-modified f)}
+         request))
+     (throw (ex-info (str "File " f " does not exist") {})))))
 
 (defn send-file-loop
   [{:keys [state] :as repl-env}]
