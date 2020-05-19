@@ -83,11 +83,13 @@
 ;; TODO: fix for Windows, getPath won't return a URL style path
 (defn last-modified-index
   [opts]
-  (into {}
-    (map (fn [[k v]] [(.getPath ^File (:out-file v)) (:modified v)]))
-    (deps/deps->graph
-      (deps/with-out-files
-        (deps/all-deps (ana-api/current-state) (:main opts) opts) opts))))
+  (if-let [main (:main opts)]
+    (into {}
+      (map (fn [[k v]] [(.getPath ^File (:out-file v)) (:modified v)]))
+      (deps/deps->graph
+        (deps/with-out-files
+          (deps/all-deps (ana-api/current-state) main opts) opts)))
+    (throw (ex-info ":main namespace not supplied in compiler options" {}))))
 
 (defn cache-compare
   ([repl-env opts]
