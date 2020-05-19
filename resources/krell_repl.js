@@ -12,6 +12,7 @@ var SERVER_IP = "$KRELL_SERVER_IP";
 var SERVER_PORT = $KRELL_SERVER_PORT;
 
 const IS_ANDROID = Platform.OS === "android";
+const KRELL_VERBOSE = $KRELL_VERBOSE;
 
 const evaluate = eval;
 var libLoadListeners = {};
@@ -66,7 +67,7 @@ const cacheInit = async () => {
 
 const cachePut = (path, entry) => {
     MEM_CACHE.set(path, entry);
-    //console.log("CACHE PUT:", path, entry.modified);
+    if (KRELL_VERBOSE) console.log("CACHE PUT:", path, entry.modified);
     AsyncStorage.setItem(krellPrefix(path), JSON.stringify(entry))
         .catch((err) => {
             console.log("Could not cache path:", path, "error:", err);
@@ -99,7 +100,7 @@ const cacheClear = async (all) => {
     } else {
         for (let cacheKey of cacheKeys) {
             if(!excludes[cacheKey]) {
-                //console.log("CACHE DELETE:", cacheKey);
+                if (KRELL_VERBOSE) console.log("CACHE DELETE:", cacheKey);
                 AsyncStorage.removeItem(krellPrefix(cacheKey));
             }
         }
