@@ -69,7 +69,7 @@
           :value    (.getPath f)
           :modified (util/last-modified f)}
          request))
-     (throw (ex-info (str "File " f " does not exist") {})))))
+     (throw (ex-info (str "File " f " does not exist") {:krell/error :file-missing})))))
 
 (defn send-file-loop
   [{:keys [state] :as repl-env}]
@@ -89,7 +89,8 @@
       (deps/deps->graph
         (deps/with-out-files
           (deps/all-deps (ana-api/current-state) main opts) opts)))
-    (throw (ex-info ":main namespace not supplied in compiler options" {}))))
+    (throw (ex-info ":main namespace not supplied in build configuration"
+             {:krell/error :main-ns-missing}))))
 
 (defn cache-compare
   ([repl-env opts]
@@ -210,7 +211,8 @@
   parameter. This is called by the watcher off the main thread."
   [repl-env {:keys [path] :as evt} opts]
   (when-not (:main opts)
-    (throw (ex-info (str ":main namespace not supplied in build configuration") {})))
+    (throw (ex-info (str ":main namespace not supplied in build configuration")
+             {:krell/error :main-ns-missing})))
   (let [src      (util/to-file path)
         path-str (.getPath src)]
     (when (and (modified-source? repl-env evt)
