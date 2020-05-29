@@ -76,3 +76,9 @@
 
 (defn closure-relative-path [file-path opts]
   (.getPath (relativize (io/file (:output-dir opts) "goog") (io/file file-path))))
+
+(defn url-path [f]
+  (string/replace (get-path f) File/separator "/"))
+
+(defn platform-path [rel-url-frag]
+  (string/replace rel-url-frag "/" File/separator))

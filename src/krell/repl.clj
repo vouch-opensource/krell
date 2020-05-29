@@ -57,7 +57,6 @@
                        {:queue-value result})))]
          ret)))))
 
-;; TODO: fix for Windows, .getPath won't return a URL style path
 (defn send-file
   ([repl-env f opts]
    (send-file repl-env f nil opts))
@@ -66,7 +65,7 @@
      (rn-eval repl-env (slurp f)
        (merge
          {:type     "load-file"
-          :value    (.getPath f)
+          :value    (util/url-path f)
           :modified (util/last-modified f)}
          request))
      (throw (ex-info (str "File " f " does not exist") {:krell/error :file-missing})))))
@@ -76,16 +75,16 @@
   (while (not (:done @state))
     (try
       (when-let [{:keys [value] :as load-file-req} (.take load-queue)]
-        (send-file repl-env (io/file value) load-file-req))
+        (send-file repl-env
+          (io/file (util/platform-path value)) load-file-req))
       (catch Throwable e
         (println e)))))
 
-;; TODO: fix for Windows, getPath won't return a URL style path
 (defn last-modified-index
   [opts]
   (if-let [main (:main opts)]
     (into {}
-      (map (fn [[k v]] [(.getPath ^File (:out-file v)) (:modified v)]))
+      (map (fn [[k v]] [(util/url-path (:out-file v)) (:modified v)]))
       (deps/deps->graph
         (deps/with-out-files
           (deps/all-deps (ana-api/current-state) main opts) opts)))
