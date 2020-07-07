@@ -1,8 +1,7 @@
 (ns krell.util
   (:require [cljs.build.api :as build-api]
             [clojure.java.io :as io]
-            [clojure.string :as string]
-            [clojure.string :as str])
+            [clojure.string :as string])
   (:import [java.io File]
            [java.net URL URLDecoder]
            [java.nio.file Path]))
