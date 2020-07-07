@@ -74,7 +74,7 @@
 (defn ns->cache-file [ns {:keys [output-dir] :as opts}]
   (let [f (build-api/target-file-for-cljs-ns ns output-dir)
         source-file (io/file (:uri (build-api/ns->location ns)))]
-    (io/file (str (string/replace (.getPath f) #".js$" "") "." (file-ext source-file) ".cache.json"))))
+    (io/file (str (string/replace (.getPath f) #".js$" "") (file-ext source-file) ".cache.json"))))
 
 (defn closure-relative-path [file-path opts]
   (.getPath (relativize (io/file (:output-dir opts) "goog") (io/file file-path))))
