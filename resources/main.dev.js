@@ -36,10 +36,10 @@ function waitForCore(cb) {
     // we only care if goog/base.js is actually in the cache, that's enough
     // to bootstrap regardless whether some things must be refetched
     if(KRELL_CACHE.ready &&
-       KRELL_CACHE.has(toPath("goog/base.js") &&
+       KRELL_CACHE.has(toPath("goog/base.js")) &&
        KRELL_CACHE.has(toPath("goog/deps.js")) &&
        KRELL_CACHE.has(toPath("cljs_deps.js")) &&
-       KRELL_CACHE.has(toPath("krell_repl_deps.js")))) {
+       KRELL_CACHE.has(toPath("krell_repl_deps.js"))) {
        bootstrap();
         cb();
     } else if(typeof cljs !== 'undefined') {
