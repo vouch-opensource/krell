@@ -191,36 +191,11 @@ const exists_ = (obj, xs) => {
     }
 };
 
-const pathToIds_ = () => {
-    let pathToIds = {};
-    for(let id in goog.debugLoader_.idToPath_) {
-        let path = goog.debugLoader_.idToPath_[id];
-        if(pathToIds[path] == null) {
-            pathToIds[path] = [];
-        }
-        pathToIds[path].push(id);
-    }
-    return pathToIds;
-};
-
-const isLoaded_ = (path, index) => {
-    let ids = index[path];
-    for(let i = 0; i < ids.length; i++) {
-        if(exists_(global, ids[i])) {
-            return true;
-        }
-    }
-    return false;
-};
-
 const flushLoads_ = (socket) => {
-    let index    = pathToIds_(),
-        filtered = pendingLoads_.filter(function(req) {
-                       return !isLoaded_(req.value, index);
-                   }).map(function(req) {
-                       return JSON.stringify(req)+"\0";
-                   });
-    socket.write(filtered.join(""));
+    let allPending = pendingLoads_.map(function(req) {
+        return JSON.stringify(req)+"\0";
+    });
+    socket.write(allPending.join(""));
     pendingLoads_ = [];
 };
 
