@@ -46,7 +46,9 @@
         (string/replace "$KRELL_SERVER_IP" (net/get-ip))
         (string/replace "$KRELL_SERVER_PORT" (-> repl-env :options :port str))
         (string/replace "$CLOSURE_BASE_PATH"
-          (str (.getPath (io/file (:output-dir opts) "goog")) "/"))))))
+          (string/replace
+            (str (.getPath (io/file (:output-dir opts) "goog")) "/")
+            File/separator "/"))))))
 
 (defn write-assets-js
   "Write out the REPL asset support code."
