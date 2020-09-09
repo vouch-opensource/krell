@@ -5,7 +5,8 @@
             [clojure.java.io :as io]
             [clojure.string :as string]
             [krell.assets :as assets]
-            [krell.util :as util]))
+            [krell.util :as util])
+  (:import [java.io File]))
 
 (def ^:dynamic *nses-with-requires* nil)
 
@@ -36,13 +37,15 @@
   (if (js-require-asset? ast)
     (let [new-path
           (let [ns (-> env :ns :name)]
-            (util/get-path
-              (util/relativize
-                (.getAbsoluteFile (io/file (:output-dir opts)))
-                (.getAbsoluteFile
-                  (io/file
-                    (.getParentFile (io/file (ana-api/current-file)))
-                    (normalize (-> ast :args first :val)))))))
+            (string/replace
+              (util/get-path
+                (util/relativize
+                  (.getAbsoluteFile (io/file (:output-dir opts)))
+                  (.getAbsoluteFile
+                    (io/file
+                      (.getParentFile (io/file (ana-api/current-file)))
+                      (normalize (-> ast :args first :val))))))
+              File/separator "/"))
           cur-ns (ana-api/current-ns)]
       (when *nses-with-requires*
         (swap! *nses-with-requires* conj cur-ns))
