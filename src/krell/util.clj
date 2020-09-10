@@ -71,8 +71,9 @@
   (.mkdirs (.getParentFile (.getCanonicalFile f))))
 
 (defn ns->cache-file [ns {:keys [output-dir] :as opts}]
-  (let [f (build-api/target-file-for-cljs-ns ns output-dir)]
-    (io/file (str (string/replace (.getPath f) #".js$" "") ".cljs.cache.json"))))
+  (let [f    (build-api/target-file-for-cljs-ns ns output-dir)
+        path (-> ns build-api/ns->location :relative-path)]
+    (io/file (str (string/replace (.getPath f) #".js$" "") (file-ext path) ".cache.json"))))
 
 (defn closure-relative-path [file-path opts]
   (.getPath (relativize (io/file (:output-dir opts) "goog") (io/file file-path))))
