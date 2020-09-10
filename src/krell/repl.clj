@@ -225,42 +225,50 @@
                           (deps/all-deps state (:main opts) opts))
                         (-> repl-env :options :recompile))
               all     (concat [ns-info] ancs)]
-         (try
-           ;; we need to compute js deps so that requires from node_modules won't fail
-           (build-api/handle-js-modules state
-             (build-api/dependency-order
-               (build-api/add-dependency-sources all opts))
-             opts)
-           (loop [xs all]
-             (when-let [ijs (first xs)]
-               (let [warns   (atom [])
-                     handler (collecting-warning-handler warns)
-                     dest    (build-api/target-file-for-cljs-ns
-                               (:ns ijs) (:output-dir opts))]
-                 (try
-                   (ana-api/with-warning-handlers [handler]
-                     (ana-api/with-passes
-                       (into ana-api/default-passes passes/custom-passes)
-                       (comp-api/compile-file state
-                         (:source-file ijs)
-                         (build-api/target-file-for-cljs-ns
-                           (:ns ijs) (:output-dir opts)) opts)))
-                   (if (empty? @warns)
-                     (send-file repl-env dest {:reload true})
-                     ;; TODO: it may be that warns strings have chars that will break console.warn ?
-                     ;; TODO: also warn at REPL
-                     (let [pre (str "Could not reload " (:ns ns-info) ":")]
-                       (warn-client repl-env
-                         (string/join "\n" (concat [pre] @warns)))))
-                   (catch Throwable t
-                     (println t)
-                     (warn-client repl-env
-                       (str (:ns ns-info)
-                         " compilation failed with exception: "
-                         (.getMessage t)))))
-                 (recur (next xs)))))
-           ;; notify client we're done
-           (rn-eval repl-env nil {:type "reload"})))
+          (try
+            ;; we need to compute js deps so that requires from node_modules won't fail
+            (build-api/handle-js-modules state
+              (build-api/dependency-order
+                (build-api/add-dependency-sources all opts))
+              opts)
+            (loop [xs all deps-js ""]
+              (if-let [ijs (first xs)]
+                (let [warns   (atom [])
+                      handler (collecting-warning-handler warns)
+                      dest    (build-api/target-file-for-cljs-ns
+                                (:ns ijs) (:output-dir opts))
+                      ijs'    (try
+                                (ana-api/with-warning-handlers [handler]
+                                  (ana-api/with-passes
+                                    (into ana-api/default-passes passes/custom-passes)
+                                    (comp-api/compile-file state
+                                      (:source-file ijs)
+                                      (build-api/target-file-for-cljs-ns
+                                        (:ns ijs) (:output-dir opts)) opts)))
+                                (catch Throwable t
+                                  (println t)
+                                  (warn-client repl-env
+                                    (str (:ns ns-info)
+                                      " compilation failed with exception: "
+                                      (.getMessage t)))
+                                  nil))]
+                  (if (empty? @warns)
+                    (send-file repl-env dest {:reload true})
+                    ;; TODO: it may be that warns strings have chars that will break console.warn ?
+                    ;; TODO: also warn at REPL
+                    (let [pre (str "Could not reload " (:ns ns-info) ":")]
+                      (warn-client repl-env
+                        (string/join "\n" (concat [pre] @warns)))))
+                  (recur
+                    (next xs)
+                    ;; dep string must computed from a *compiled* file,
+                    ;; thus ijs' and not ijs
+                    (if (and ijs' (empty? @warns))
+                      (str deps-js (build-api/goog-dep-string opts ijs'))
+                      deps-js)))
+                (rn-eval repl-env deps-js)))
+            ;; notify client we're done
+            (rn-eval repl-env nil {:type "reload"})))
         (catch Throwable t
           (println t))))))
 
