@@ -43,7 +43,7 @@
     (write-if-different out-file
       (-> source
         (string/replace "$KRELL_VERBOSE" (str (or (-> repl-env :options :krell/verbose) false)))
-        (string/replace "$KRELL_SERVER_IP" (net/get-ip))
+        (string/replace "$KRELL_SERVER_IP" (-> repl-env :options :host))
         (string/replace "$KRELL_SERVER_PORT" (-> repl-env :options :port str))
         (string/replace "$CLOSURE_BASE_PATH"
           (string/replace

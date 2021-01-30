@@ -285,8 +285,8 @@
 (defn setup
   ([repl-env] (setup repl-env nil))
   ([{:keys [options state socket] :as repl-env} opts]
-   (let [port (:port options)]
-     (println "\nWaiting for device connection on port" port)
+   (let [{:keys [host port]} options]
+     (println (format "\nWaiting for device connection on %s:%s" host port))
      (.start
        (Thread.
          (bound-fn []
@@ -331,6 +331,10 @@
 (defn choose-first-opt
   [cfg value]
   (assoc-in cfg [:repl-env-options :choose-first] (= value "true")))
+
+(defn host-opt
+  [cfg value]
+  (assoc-in cfg [:repl-env-options :host] value))
 
 (defn port-opt
   [cfg value]
@@ -402,6 +406,11 @@
                        :fn    watch-dirs-opt
                        :arg   "files"
                        :doc   (str "A platform separated list of directories to watch for REPL hot-reloading")}
+                      ["-h" "--host"]
+                      {:group ::cli/main
+                       :fn    host-opt
+                       :arg   "string"
+                       :doc   (str "Sets host for target clients to bind to.")}
                       ["-p" "--port"]
                       {:group ::cli/main
                        :fn    port-opt
@@ -455,6 +464,7 @@
     (KrellEnv.
       (merge
         {:port            5001
+         :host            (net/get-ip)
          :watch-dirs      watch-dirs
          :connect-timeout 30000
          :eval-timeout    30000
