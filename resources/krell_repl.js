@@ -205,12 +205,22 @@ global.CLOSURE_NO_DEPS = true;
 // offending goog.module files that would need runtime transpiler support
 global.CLOSURE_IMPORT_SCRIPT = function(path, optContents) {
     if (optContents) {
-        evaluate(optContents);
+        try {
+            evaluate(optContents);
+        } catch (e) {
+            console.error("Could not eval ", path, ":", e);
+            throw e;
+        }
         return true;
     } else {
         var cached = KRELL_CACHE.get(path);
         if(cached) {
-            evaluate(cached.source);
+            try {
+                evaluate(cached.source);
+            } catch (e) {
+                console.error("Could not load ", path, " from cache:", e);
+                throw e;
+            }
             notifyListeners({value: path});
         } else {
             loadFile(loadFileSocket, path, optContents);
