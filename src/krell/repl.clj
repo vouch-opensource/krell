@@ -147,7 +147,7 @@
 (defn init-js-env
   ([repl-env]
    (init-js-env repl-env repl/*repl-opts*))
-  ([repl-env opts]
+  ([{:keys [options] :as repl-env} opts]
    (let [output-dir (io/file (:output-dir opts))
          env        (ana-api/empty-env)
          cljs-deps  (io/file output-dir "cljs_deps.js")
@@ -155,12 +155,16 @@
      ;; Only ever load goog base *once*, all the dep
      ;; graph stuff is there an it needs to be preserved
      (when-not (base-loaded? repl-env)
+       (when (:krell/verbose options)
+         (println "Load GCL base files"))
        (send-file repl-env (io/file output-dir "goog/base.js") opts)
        (send-file repl-env (io/file output-dir "goog/deps.js") opts))
      (send-file repl-env repl-deps opts)
      (when (.exists cljs-deps)
        (send-file repl-env cljs-deps opts))
      (when-not (core-loaded? repl-env)
+       (when (:krell/verbose options)
+         (println "Load cljs.core"))
        ;; We cannot rely on goog.require because the debug loader assumes
        ;; you can load script synchronously which isn't possible in React
        ;; Native. Push core to the client and wait till everything is received
@@ -168,6 +172,8 @@
        (load-core repl-env opts)
        (repl/evaluate-form repl-env env "<cljs repl>"
          '(enable-console-print!))
+       (when (:krell/verbose options)
+         (println "Install REPL-friendly goog.require"))
        (bootstrap/install-repl-goog-require repl-env env))
      ;; setup printing
      (repl/evaluate-form repl-env env "<cljs repl>"
