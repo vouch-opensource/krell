@@ -24,8 +24,12 @@ function bootstrap() {
         evaluate(KRELL_CACHE.get(toPath("goog/deps.js")).source);
         evaluate(KRELL_CACHE.get(toPath("cljs_deps.js")).source);
         evaluate(KRELL_CACHE.get(toPath("krell_repl_deps.js").source));
+        // NOTE: this seems like this was done back when multiple loads of
+        // files during bootstrapping was possible?
+        /*
         goog.isProvided__ = goog.isProvided_;
         goog.isProvided_ = (x) => false;
+        */
         console.log("Bootstrapped from cache");
     } catch(e) {
         console.log("Bootstrap from cache failed:", e);
