@@ -154,27 +154,32 @@
          repl-deps  (io/file output-dir "krell_repl_deps.js")]
      ;; Only ever load goog base *once*, all the dep
      ;; graph stuff is there an it needs to be preserved
-     (when-not (base-loaded? repl-env)
+     (if-not (base-loaded? repl-env)
+       (do (when (:krell/verbose options)
+             (println "BOOTSTRAP: Load GCL base files"))
+           (send-file repl-env (io/file output-dir "goog/base.js") opts)
+           (send-file repl-env (io/file output-dir "goog/deps.js") opts))
        (when (:krell/verbose options)
-         (println "Load GCL base files"))
-       (send-file repl-env (io/file output-dir "goog/base.js") opts)
-       (send-file repl-env (io/file output-dir "goog/deps.js") opts))
+         (println "BOOTSTRAP: GCL base files already present")))
      (send-file repl-env repl-deps opts)
      (when (.exists cljs-deps)
        (send-file repl-env cljs-deps opts))
-     (when-not (core-loaded? repl-env)
+     (if-not (core-loaded? repl-env)
+       (do
+         (when (:krell/verbose options)
+           (println "BOOTSTRAP: Load cljs.core"))
+         ;; We cannot rely on goog.require because the debug loader assumes
+         ;; you can load script synchronously which isn't possible in React
+         ;; Native. Push core to the client and wait till everything is received
+         ;; before proceeding
+         (load-core repl-env opts)
+         (repl/evaluate-form repl-env env "<cljs repl>"
+           '(enable-console-print!))
+         (when (:krell/verbose options)
+           (println "BOOTSTRAP: Install REPL-friendly goog.require"))
+         (bootstrap/install-repl-goog-require repl-env env))
        (when (:krell/verbose options)
-         (println "Load cljs.core"))
-       ;; We cannot rely on goog.require because the debug loader assumes
-       ;; you can load script synchronously which isn't possible in React
-       ;; Native. Push core to the client and wait till everything is received
-       ;; before proceeding
-       (load-core repl-env opts)
-       (repl/evaluate-form repl-env env "<cljs repl>"
-         '(enable-console-print!))
-       (when (:krell/verbose options)
-         (println "Install REPL-friendly goog.require"))
-       (bootstrap/install-repl-goog-require repl-env env))
+         (println "BOOTSTRAP: cljs.core already present")))
      ;; setup printing
      (repl/evaluate-form repl-env env "<cljs repl>"
        '((fn []
