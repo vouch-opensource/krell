@@ -170,11 +170,13 @@
        ;; Native. Push core to the client and wait till everything is received
        ;; before proceeding
        (load-core repl-env opts)
-       (repl/evaluate-form repl-env env "<cljs repl>"
-         '(enable-console-print!))
        (when (:krell/verbose options)
-         (println "Install REPL-friendly goog.require"))
-       (bootstrap/install-repl-goog-require repl-env env))
+         (println "Install REPL-friendly goog.require")))
+     ;; always establish printing
+     (repl/evaluate-form repl-env env "<cljs repl>"
+       '(enable-console-print!))
+     ;; always repatch require
+     (bootstrap/install-repl-goog-require repl-env env)
      ;; setup printing
      (repl/evaluate-form repl-env env "<cljs repl>"
        '((fn []
