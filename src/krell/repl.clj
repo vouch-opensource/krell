@@ -149,7 +149,6 @@
    (init-js-env repl-env repl/*repl-opts*))
   ([{:keys [options] :as repl-env} opts]
    (let [output-dir (io/file (:output-dir opts))
-         env        (ana-api/empty-env)
          cljs-deps  (io/file output-dir "cljs_deps.js")
          repl-deps  (io/file output-dir "krell_repl_deps.js")]
      ;; Only ever load goog base *once*, all the dep
@@ -175,31 +174,7 @@
          ;; before proceeding
          (load-core repl-env opts))
        (when (:krell/verbose options)
-         (println "BOOTSTRAP: cljs.core already present")))
-     ;; always establish printing
-     (repl/evaluate-form repl-env env "<cljs repl>"
-       '(enable-console-print!))
-     ;; always repatch require
-     (when (:krell/verbose options)
-       (println "BOOTSTRAP: Install REPL-friendly goog.require"))
-     (bootstrap/install-repl-goog-require repl-env env)
-     ;; setup printing
-     (repl/evaluate-form repl-env env "<cljs repl>"
-       '((fn []
-           (fn redirect-output [out]
-             (set! *print-newline* true)
-             (set! *print-fn*
-               (fn [str]
-                 (->> (js-obj "type" "out" "value" str)
-                   (.stringify js/JSON)
-                   (.write out))
-                 (.write out "\0")))
-             (set! *print-err-fn*
-               (fn [str]
-                 (->> (js-obj "type" "err" "value" str)
-                   (.stringify js/JSON)
-                   (.write out))
-                 (.write out "\0"))))))))))
+         (println "BOOTSTRAP: cljs.core already present"))))))
 
 (defn modified-source?
   [{:keys [file-index] :as repl-env} {:keys [type path]}]

@@ -1,5 +1,6 @@
 import {
     evaluate,
+    getSocket,
     onSourceLoad,
     onKrellReload,
     onKrellCacheInvalidate
@@ -24,16 +25,63 @@ function bootstrap() {
         evaluate(KRELL_CACHE.get(toPath("goog/deps.js")).source);
         evaluate(KRELL_CACHE.get(toPath("cljs_deps.js")).source);
         evaluate(KRELL_CACHE.get(toPath("krell_repl_deps.js").source));
-        // NOTE: this seems like this was done back when multiple loads of
-        // files during bootstrapping was possible?
-        /*
-        goog.isProvided__ = goog.isProvided_;
-        goog.isProvided_ = (x) => false;
-        */
         console.log("Bootstrapped from cache");
     } catch(e) {
         console.log("Bootstrap from cache failed:", e);
     }
+}
+
+// should be called after the main namespace is loaded
+function bootstrapRepl() {
+    // patch goog.isProvided to allow reloading namespaces at the REPL
+    if(!goog.isProvided__) goog.isProvided__ = goog.isProvided_;
+    goog.isProvided_ = (x) => false;
+    if(!goog.require__) goog.require__ = goog.require;
+    goog.require = (src, reload) => {
+        if(reload === "reload-all") {
+            goog.cljsReloadAll_ = true
+        }
+        if(reload || goog.cljsReloadAll_) {
+            if(goog.debugLoader_) {
+                let path = goog.debugLoader_.getPathFromDeps_(src);
+                goog.object.remove(goog.debugLoader_.written_, path);
+                goog.object.remove(goog.debugLoader_.written_, goog.basePath + path);;
+            } else {
+                let path = goog.object.get(goog.dependencies_.nameToPath, src);
+                goog.object.remove(goog.dependencies_.visited, path);
+                goog.object.remove(goog.dependencies_.written, path);
+                goog.object.remove(goog.dependencies_.visited, goog.basePath + path);
+            }
+        }
+        let ret = goog.require__(src);
+        if(reload === "reload-all") {
+            goog.cljsReloadAll_ = false
+        }
+        if(goog.isInModuleLoader_()) {
+            return goog.module.getInternal_(src);
+        } else {
+            return ret;
+        }
+    };
+
+    // enable printing
+    cljs.core.enable_console_print_BANG_();
+    let socket = getSocket();
+    cljs.core._STAR_print_newline_STAR_ = true;
+    cljs.core._STAR_print_fn_STAR_ = (str) => {
+        socket.write(JSON.stringify({
+            type: "out",
+            value: str
+        }));
+        socket.write("\0");
+    };
+    cljs.core._STAR_print_err_fn_STAR_ = (str) => {
+        socket.write(JSON.stringify({
+            type: "err",
+            value: str
+        }));
+        socket.write("\0");
+    };
 }
 
 function waitForCore(cb) {
@@ -44,7 +92,7 @@ function waitForCore(cb) {
        KRELL_CACHE.has(toPath("goog/deps.js")) &&
        KRELL_CACHE.has(toPath("cljs_deps.js")) &&
        KRELL_CACHE.has(toPath("krell_repl_deps.js"))) {
-       bootstrap();
+        bootstrap();
         cb();
     } else if(typeof cljs !== 'undefined') {
         cb();
@@ -97,6 +145,7 @@ function krellUpdateRoot(cb) {
             let path = goog.debugLoader_.getPathFromDeps_(main);
             console.log("Namespace", main, "not loaded, fetching:", path);
             onSourceLoad(path, function() {
+                bootstrapRepl();
                 cb((props) => {
                     return getMainFn(main)(props);
                 });
@@ -106,6 +155,7 @@ function krellUpdateRoot(cb) {
             goog.require(main);
         } else {
             console.log("Namespace", main, "already loaded")
+            bootstrapRepl();
             cb((props) => {
                 return getMainFn(main)(props);
             });
