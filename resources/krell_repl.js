@@ -156,6 +156,10 @@ cacheInit();
 var loadFileSocket = null;
 var scheduled = null;
 
+const getSocket = () => {
+    return loadFileSocket;
+};
+
 const loadFile = (socket, path) => {
     let req = {
             type: "load-file",
@@ -284,12 +288,6 @@ const handleMessage = (socket, data) => {
         if(msg.form) {
             ret = evaluate(msg.form);
         }
-        // output forwarding
-        if (typeof ret == "function") {
-            if (ret.name === "cljs$user$redirect_output") {
-                ret(socket);
-            }
-        }
         if(req) {
             if(req.type === "load-file") {
                 let path = req.value;
@@ -414,5 +412,6 @@ module.exports = {
     evaluate: evaluate,
     onKrellReload: onKrellReload,
     onKrellCacheInvalidate: onKrellCacheInvalidate,
-    onSourceLoad: onSourceLoad
+    onSourceLoad: onSourceLoad,
+    getSocket: getSocket
 };
