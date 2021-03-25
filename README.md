@@ -4,6 +4,13 @@ Stand alone, low configuration [ClojureScript](https://clojurescript.org)
 tooling for [React Native](https://reactnative.dev). All features are provided
 as a simple set of defaults over the standard ClojureScript compiler.
 
+## Releases & Dependency Information
+
+```
+io.vouch/krell {:git/url "https://github.com/vouch-opensource/krell"
+                :sha "d0e115309580ca0bdc782e4ca396df66a357d212"}
+```
+
 ## Why Krell?
 
 There are two other relatively mature ClojureScript tools for React Native,
