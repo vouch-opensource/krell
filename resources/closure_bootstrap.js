@@ -2,14 +2,53 @@ import { npmDeps } from "./npm_deps.js";
 import { krellNpmDeps } from "./krell_npm_deps.js";
 import { assets } from "./krell_assets.js";
 
+var METRO_IP = "$METRO_SERVER_IP";
+var METRO_PORT = $METRO_SERVER_PORT;
+
 const evaluate = eval;
+
 global.CLOSURE_BASE_PATH = "$CLOSURE_BASE_PATH";
 global.CLOSURE_NO_DEPS = true;
 
+var loadQueue = [];
+
+const loadFile = (path) => {
+    return fetch("http://" + METRO_IP + ":" + METRO_PORT + "/" + path)
+        .then(function(res) {
+            evaluate(res.text);
+        });
+};
+
+const loadPending = async () => {
+    for(;;) {
+        if(loadQueue.length === 0) {
+            break;
+        }
+        let next = loadQueue.unshift();
+        await loadFile(next);
+    }
+};
+
+const queueLoad = (path) => {
+    loadQueue.push(path);
+    setTimeout(loadPending, 250);
+};
+
+// =============================================================================
+// Bootstrap Files
+
 evaluate($CLOSURE_BASE_JS);
 evaluate($CLOSURE_DEPS_JS);
+
+// =============================================================================
+// ClojureScript Dev Dependency Graph
+
+// NOTE: we probably need to reload these during a REPL session
 //evaluate($CLJS_DEPS_JS);
 //evaluate($KRELL_REPL_DEPS_JS);
+
+// =============================================================================
+// Closure Load Customization and Monkey-patching
 
 // NOTE: CLOSURE_LOAD_FILE_SYNC not needed as ClojureScript now transpiles
 // offending goog.module files that would need runtime transpiler support
@@ -23,7 +62,7 @@ global.CLOSURE_IMPORT_SCRIPT = function(path, optContents) {
         }
         return true;
     } else {
-        loadFile(loadFileSocket, path, optContents);
+        queueLoad(path);
         return true;
     }
 };

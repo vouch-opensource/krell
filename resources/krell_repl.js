@@ -1,8 +1,5 @@
 import { Platform } from "react-native";
 import TcpSocket from "react-native-tcp-socket";
-import { npmDeps } from "./npm_deps.js";
-import { krellNpmDeps } from "./krell_npm_deps.js";
-import { assets } from "./krell_assets.js";
 import "./closure_bootstrap.js";
 
 var CONNECTED = false;
@@ -15,9 +12,9 @@ const IS_ANDROID = Platform.OS === "android";
 const KRELL_VERBOSE = $KRELL_VERBOSE;
 
 const evaluate = eval;
+
 var libLoadListeners = {};
 var reloadListeners = [];
-var pendingLoads_ = [];
 
 global.CLOSURE_BASE_PATH = "$CLOSURE_BASE_PATH";
 
@@ -46,14 +43,6 @@ const exists_ = (obj, xs) => {
     } else {
         return false;
     }
-};
-
-const flushLoads_ = (socket) => {
-    let allPending = pendingLoads_.map(function(req) {
-        return JSON.stringify(req)+"\0";
-    });
-    socket.write(allPending.join(""));
-    pendingLoads_ = [];
 };
 
 const notifyListeners = (request) => {
@@ -146,8 +135,11 @@ const handleMessage = (socket, data) => {
     }
 };
 
-global.KRELL_RELOAD = function(nses) {
-    // TODO: notifyReloadListeners() when done
+global.KRELL_RELOAD = async function(nses) {
+    for(let ns of nses) {
+        await loadFile(ns);
+    }
+    notifyReloadListeners();
 }
 
 const initSocket = (socket) => {
