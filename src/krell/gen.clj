@@ -34,6 +34,30 @@
                  (contents-equal? f content))
     (spit f content)))
 
+(defn write-bootstrap
+  [opts]
+  (let [source    (slurp (io/resource "bootstrap.js"))
+        goog-base (slurp (io/resource "goog/base.js"))
+        goog-deps (slurp (io/resource "goog/deps.js"))
+        ;;cljs-deps (slurp (io/resource "cljs_deps.js"))
+        ;;repl-deps (slurp (io/resource "krell_repl_deps.js"))
+        out-file  (io/file (:output-dir opts) "bootstrap.js")]
+    (util/mkdirs out-file)
+    (write-if-different out-file
+      (-> source
+        (string/replace "$CLOSURE_BASE_JS" (pr-str goog-base))
+        (string/replace "$CLOSURE_DEPS_JS" (pr-str goog-deps))
+        ;;(string/replace "$CLJS_DEPS_JS" cljs-deps)
+        ;;(string/replace "$KRELL_REPL_DEPS_JS" repl-deps)
+        (string/replace "$CLOSURE_BASE_PATH"
+          (string/replace
+            (str (.getPath (io/file (:output-dir opts) "goog")) "/")
+            File/separator "/"))))))
+
+(comment
+  (write-bootstrap {:output-dir "target"})
+  )
+
 (defn write-repl-js
   "Write out the REPL support code. See resources/krell_repl.js"
   [repl-env opts]
