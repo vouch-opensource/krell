@@ -1,6 +1,11 @@
 import { Platform } from "react-native";
 import TcpSocket from "react-native-tcp-socket";
-import "./closure_bootstrap.js";
+import {
+    bootstrapRepl,
+    evaluate,
+    loadFile,
+    onSourceLoad
+} from "./closure_bootstrap.js";
 
 var CONNECTED = false;
 var RECONNECT_INTERVAL = 3000;
@@ -11,16 +16,7 @@ var SERVER_PORT = $KRELL_SERVER_PORT;
 const IS_ANDROID = Platform.OS === "android";
 const KRELL_VERBOSE = $KRELL_VERBOSE;
 
-const evaluate = eval;
-
-var libLoadListeners = {};
 var reloadListeners = [];
-
-global.CLOSURE_BASE_PATH = "$CLOSURE_BASE_PATH";
-
-function toPath(path) {
-    return CLOSURE_BASE_PATH.replace("goog/", "") + path;
-}
 
 // =============================================================================
 // REPL Server
@@ -45,26 +41,10 @@ const exists_ = (obj, xs) => {
     }
 };
 
-const notifyListeners = (request) => {
-    let path = request.value,
-        xs = libLoadListeners[path] || [];
-
-    xs.forEach(function (x) {
-        x();
-    });
-};
-
 const notifyReloadListeners = () => {
     reloadListeners.forEach(function(x) {
         x();
     });
-};
-
-const onSourceLoad = (path, cb) => {
-    if(typeof libLoadListeners[path] === "undefined") {
-        libLoadListeners[path] = [];
-    }
-    libLoadListeners[path].push(cb);
 };
 
 const onKrellReload = (cb) => {
@@ -192,6 +172,5 @@ tryConnection();
 module.exports = {
     evaluate: evaluate,
     onKrellReload: onKrellReload,
-    onSourceLoad: onSourceLoad,
-    getSocket: getSocket
+    onSourceLoad: onSourceLoad
 };

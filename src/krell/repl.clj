@@ -212,24 +212,7 @@
          ;; the compiler one are the original ones
          (bound-fn [e] (recompile repl-env e opts))
          (:watch-dirs options))
-       (watcher/watch)))
-   ;; compile cljs.core & its dependencies, goog/base.js must be available
-   ;; for bootstrap to load, use new closure/compile as it can handle
-   ;; resources in JARs
-   (let [output-dir (io/file (:output-dir opts))
-         core       (io/resource "cljs/core.cljs")
-         core-js    (closure/compile core
-                      (assoc opts
-                        :output-file
-                        (closure/src-file->target-file
-                          core (dissoc opts :output-dir))))
-         deps       (closure/add-dependencies opts core-js)
-         repl-deps  (io/file output-dir "krell_repl_deps.js")]
-     ;; output unoptimized code and only the deps file for all compiled
-     ;; namespaces, we don't need the bootstrap target file
-     (apply closure/output-unoptimized
-       (assoc (assoc opts :target :none)
-         :output-to (.getPath repl-deps)) deps))))
+       (watcher/watch)))))
 
 (defn choose-first-opt
   [cfg value]
@@ -250,8 +233,9 @@
 
 (defn krell-compile
   [repl-env-var {:keys [repl-env-options options] :as cfg}]
-  (gen/write-index-js options)
+  (gen/write-closure-bootstrap options)
   (gen/write-repl-js (apply repl-env-var (mapcat identity repl-env-options)) options)
+  (gen/write-index-js options)
   (let [opt-level (:optimizations options)]
     (ana-api/with-passes
       (into ana-api/default-passes passes/custom-passes)

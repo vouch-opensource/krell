@@ -34,29 +34,25 @@
                  (contents-equal? f content))
     (spit f content)))
 
-(defn write-bootstrap
+(defn write-closure-bootstrap
   [opts]
-  (let [source    (slurp (io/resource "bootstrap.js"))
+  (let [source    (slurp (io/resource "closure_bootstrap.js"))
         goog-base (slurp (io/resource "goog/base.js"))
         goog-deps (slurp (io/resource "goog/deps.js"))
-        ;;cljs-deps (slurp (io/resource "cljs_deps.js"))
-        ;;repl-deps (slurp (io/resource "krell_repl_deps.js"))
-        out-file  (io/file (:output-dir opts) "bootstrap.js")]
+        cljs-deps (slurp (io/resource "cljs_deps.js"))
+        out-file  (io/file (:output-dir opts) "closure_bootstrap.js")]
     (util/mkdirs out-file)
     (write-if-different out-file
       (-> source
+        (string/replace "$METRO_SERVER_IP" (:metro-ip opts (net/get-ip)))
+        (string/replace "$METRO_SERVER_PORT" (str (:metro-port opts 8081)))
         (string/replace "$CLOSURE_BASE_JS" (pr-str goog-base))
         (string/replace "$CLOSURE_DEPS_JS" (pr-str goog-deps))
-        ;;(string/replace "$CLJS_DEPS_JS" cljs-deps)
-        ;;(string/replace "$KRELL_REPL_DEPS_JS" repl-deps)
+        (string/replace "$CLJS_DEPS_JS" cljs-deps)
         (string/replace "$CLOSURE_BASE_PATH"
           (string/replace
             (str (.getPath (io/file (:output-dir opts) "goog")) "/")
             File/separator "/"))))))
-
-(comment
-  (write-bootstrap {:output-dir "target"})
-  )
 
 (defn write-repl-js
   "Write out the REPL support code. See resources/krell_repl.js"
@@ -68,11 +64,7 @@
       (-> source
         (string/replace "$KRELL_VERBOSE" (str (or (-> repl-env :options :krell/verbose) false)))
         (string/replace "$KRELL_SERVER_IP" (net/get-ip))
-        (string/replace "$KRELL_SERVER_PORT" (-> repl-env :options :port str))
-        (string/replace "$CLOSURE_BASE_PATH"
-          (string/replace
-            (str (.getPath (io/file (:output-dir opts) "goog")) "/")
-            File/separator "/"))))))
+        (string/replace "$KRELL_SERVER_PORT" (-> repl-env :options :port str))))))
 
 (defn write-assets-js
   "Write out the REPL asset support code."
