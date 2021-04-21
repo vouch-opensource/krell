@@ -86,7 +86,6 @@ evaluate($CLJS_DEPS_JS);
 // NOTE: CLOSURE_LOAD_FILE_SYNC not needed as ClojureScript now transpiles
 // offending goog.module files that would need runtime transpiler support
 global.CLOSURE_IMPORT_SCRIPT = function(path, optContents) {
-    console.log("CLOSURE_IMPORT_SCRIPT", path);
     if (optContents) {
         try {
             evaluate(optContents);
