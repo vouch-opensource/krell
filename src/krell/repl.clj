@@ -178,7 +178,9 @@
                 (rn-eval repl-env deps-js)))
             ;; have the client queue the reloads
             (rn-eval repl-env
-              (str (apply str "KRELL_RELOAD([" (map pr-str (interpose "," @reloads))) "])"))))
+              (str
+                (apply str "KRELL_RELOAD(["
+                  (map (comp pr-str str) (interpose "," @reloads))) "])"))))
         (catch Throwable t
           (println t))))))
 

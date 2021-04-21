@@ -117,7 +117,8 @@ const handleMessage = (socket, data) => {
 
 global.KRELL_RELOAD = async function(nses) {
     for(let ns of nses) {
-        await loadFile(ns);
+        let path = goog.debugLoader_.getPathFromDeps_(ns);
+        await loadFile(path);
     }
     notifyReloadListeners();
 }
@@ -160,6 +161,11 @@ const tryConnection = () => {
         }, function(address) {
             console.log("Connected to Krell REPL Server");
             CONNECTED = true;
+            // one cljs.core is available can monkeypatch Closure
+            // and setup printing
+            onSourceLoad(goog.debugLoader_.getPathFromDeps_("cljs.core"), () => {
+                bootstrapRepl(socket);
+            });
         });
         initSocket(socket);
     } else {

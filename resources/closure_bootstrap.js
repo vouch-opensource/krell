@@ -23,6 +23,7 @@ const notifyListeners = (path) => {
     xs.forEach(function (x) {
         x();
     });
+    libLoadListeners[path] = [];
 };
 
 const onSourceLoad = (path, cb) => {
@@ -40,8 +41,8 @@ const loadFile = (path) => {
             try {
                 evaluate(source);
                 setTimeout(() => notifyListeners(path), 0);
-            } catch(e) {
-                console.error("Could not evaluate", url);
+            } catch(err) {
+                console.error("Could not evaluate", url, err);
             }
         })
         .catch(function(err) {
@@ -105,7 +106,7 @@ global.require = function(x) {
 };
 
 // should be called after the main namespace is loaded
-function bootstrapRepl() {
+function bootstrapRepl(socket) {
     // patch goog.isProvided to allow reloading namespaces at the REPL
     if(!goog.isProvided__) goog.isProvided__ = goog.isProvided_;
     goog.isProvided_ = (x) => false;
@@ -139,7 +140,6 @@ function bootstrapRepl() {
 
     // enable printing
     cljs.core.enable_console_print_BANG_();
-    let socket = getSocket();
     cljs.core._STAR_print_newline_STAR_ = true;
     cljs.core._STAR_print_fn_STAR_ = (str) => {
         socket.write(JSON.stringify({
