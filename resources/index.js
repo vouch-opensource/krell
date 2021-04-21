@@ -33,6 +33,8 @@ class KrellRoot extends React.Component {
                     <Text>Waiting for Krell to load files.</Text>
                 </View>
             );
+        } else {
+            return this.state.root(this.props);
         }
     }
 

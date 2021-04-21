@@ -16,6 +16,21 @@ function toPath(path) {
 
 var loadQueue = [];
 var isLoading = false;
+var libLoadListeners = {};
+
+const notifyListeners = (path) => {
+    let xs = libLoadListeners[path] || [];
+    xs.forEach(function (x) {
+        x();
+    });
+};
+
+const onSourceLoad = (path, cb) => {
+    if(typeof libLoadListeners[path] === "undefined") {
+        libLoadListeners[path] = [];
+    }
+    libLoadListeners[path].push(cb);
+};
 
 const loadFile = (path) => {
     let url = "http://" + METRO_IP + ":" + METRO_PORT + "/" + path;
@@ -24,6 +39,7 @@ const loadFile = (path) => {
         .then(function(source) {
             try {
                 evaluate(source);
+                setTimeout(() => notifyListeners(path), 0);
             } catch(e) {
                 console.error("Could not evaluate", url);
             }
@@ -50,24 +66,6 @@ const queueLoad = (path) => {
         isLoading = true;
         setTimeout(loadPending, 250);
     }
-};
-
-var libLoadListeners = {};
-
-const notifyListeners = (request) => {
-    let path = request.value,
-        xs = libLoadListeners[path] || [];
-
-    xs.forEach(function (x) {
-        x();
-    });
-};
-
-const onSourceLoad = (path, cb) => {
-    if(typeof libLoadListeners[path] === "undefined") {
-        libLoadListeners[path] = [];
-    }
-    libLoadListeners[path].push(cb);
 };
 
 // =============================================================================
