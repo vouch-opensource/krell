@@ -39,7 +39,7 @@
   (let [source    (slurp (io/resource "closure_bootstrap.js"))
         goog-base (slurp (io/resource "goog/base.js"))
         goog-deps (slurp (io/resource "goog/deps.js"))
-        cljs-deps (slurp (io/resource "cljs_deps.js"))
+        cljs-deps (slurp (io/file (:output-dir opts) "cljs_deps.js"))
         out-file  (io/file (:output-dir opts) "closure_bootstrap.js")]
     (util/mkdirs out-file)
     (write-if-different out-file
@@ -48,7 +48,7 @@
         (string/replace "$METRO_SERVER_PORT" (str (:metro-port opts 8081)))
         (string/replace "$CLOSURE_BASE_JS" (pr-str goog-base))
         (string/replace "$CLOSURE_DEPS_JS" (pr-str goog-deps))
-        (string/replace "$CLJS_DEPS_JS" cljs-deps)
+        (string/replace "$CLJS_DEPS_JS" (pr-str cljs-deps))
         (string/replace "$CLOSURE_BASE_PATH"
           (string/replace
             (str (.getPath (io/file (:output-dir opts) "goog")) "/")
