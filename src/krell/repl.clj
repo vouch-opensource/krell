@@ -2,10 +2,8 @@
   (:require [cljs.analyzer.api :as ana-api]
             [cljs.build.api :as build-api]
             [cljs.cli :as cli]
-            [cljs.closure :as closure]
             [cljs.compiler.api :as comp-api]
             [cljs.repl :as repl]
-            [cljs.repl.bootstrap :as bootstrap]
             [clojure.data.json :as json]
             [clojure.java.io :as io]
             [clojure.string :as string]
@@ -16,7 +14,7 @@
             [krell.util :as util]
             [krell.watcher :as watcher])
   (:import [java.io File IOException]
-           [java.util.concurrent LinkedBlockingQueue TimeUnit]))
+           [java.util.concurrent LinkedBlockingQueue]))
 
 (def eval-lock (Object.))
 (def results-queue (LinkedBlockingQueue.))
@@ -50,24 +48,6 @@
                          (pr-str (:status result)))
                        {:queue-value result})))]
          ret)))))
-
-(defn last-modified-index
-  [opts]
-  (if-let [main (:main opts)]
-    (into {}
-      (map (fn [[k v]] [(util/url-path (:out-file v)) (:modified v)]))
-      (deps/deps->graph
-        (deps/with-out-files
-          (deps/all-deps (ana-api/current-state) main opts) opts)))
-    (throw (ex-info ":main namespace not supplied in build configuration"
-             {:krell/error :main-ns-missing}))))
-
-(defn cache-compare
-  ([repl-env opts]
-   (rn-eval repl-env nil
-     (merge
-       {:type "cache-compare"
-        :index (last-modified-index opts)}))))
 
 (defn load-javascript
   "Load a Closure JavaScript file into the React Native REPL"
