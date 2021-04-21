@@ -233,7 +233,6 @@
 
 (defn krell-compile
   [repl-env-var {:keys [repl-env-options options] :as cfg}]
-  (gen/write-closure-bootstrap options)
   (gen/write-repl-js (apply repl-env-var (mapcat identity repl-env-options)) options)
   (gen/write-index-js options)
   (let [opt-level (:optimizations options)]
@@ -250,7 +249,8 @@
                  (gen/write-krell-npm-deps-js (passes/all-requires analysis) options)))
             (not (or (= :none opt-level) (nil? opt-level)))
             (assoc-in [:options :output-wrapper]
-              (fn [source] (str source (gen/krell-main-js options))))))))))
+              (fn [source] (str source (gen/krell-main-js options)))))))))
+  (gen/write-closure-bootstrap options))
 
 (defrecord KrellEnv [options file-index socket state]
   repl/IReplEnvOptions
