@@ -20,9 +20,6 @@
 
 (def eval-lock (Object.))
 (def results-queue (LinkedBlockingQueue.))
-(def load-queue (LinkedBlockingQueue.))
-
-(declare load-queued-files)
 
 ;; TODO: refactor this into send-message later
 (defn rn-eval
@@ -31,9 +28,6 @@
    (rn-eval repl-env js nil))
   ([{:keys [options] :as repl-env} js request]
    (locking eval-lock
-     (when (and (= "load-file" (:type request))
-                (:krell/verbose options))
-       (println "Load file:" (:value request)))
      (let [{:keys [out]} @(:socket repl-env)]
        (net/write out
          (json/write-str
@@ -56,29 +50,6 @@
                          (pr-str (:status result)))
                        {:queue-value result})))]
          ret)))))
-
-(defn send-file
-  ([repl-env f opts]
-   (send-file repl-env f nil opts))
-  ([repl-env ^File f request opts]
-   (if (.exists f)
-     (rn-eval repl-env (slurp f)
-       (merge
-         {:type     "load-file"
-          :value    (util/url-path f)
-          :modified (util/last-modified f)}
-         request))
-     (throw (ex-info (str "File " f " does not exist") {:krell/error :file-missing})))))
-
-(defn send-file-loop
-  [{:keys [state] :as repl-env}]
-  (while (not (:done @state))
-    (try
-      (when-let [{:keys [value] :as load-file-req} (.take load-queue)]
-        (send-file repl-env
-          (io/file (util/platform-path value)) load-file-req))
-      (catch Throwable e
-        (println e)))))
 
 (defn last-modified-index
   [opts]
@@ -113,8 +84,7 @@
           (let [{:keys [type value] :as event}
                 (json/read-str res :key-fn keyword)]
             (case type
-              "load-file" (.offer load-queue event)
-              "result"    (.offer results-queue event)
+              "result" (.offer results-queue event)
               (when-let [stream (if (= type "out") *out* *err*)]
                 (.write stream value 0 (.length ^String value))
                 (.flush stream))))
@@ -124,57 +94,6 @@
       (catch IOException e
         ;; TODO: we should probably log something here
         (Thread/sleep 500)))))
-
-(defn base-loaded? [repl-env]
-  (= "true"
-     (:value
-       (rn-eval repl-env
-         "(function(){return (typeof goog !== 'undefined');})()"))))
-
-(defn core-loaded? [repl-env]
-  (= "true"
-     (:value
-       (rn-eval repl-env
-         "(function(){return (typeof cljs !== 'undefined');})()"))))
-
-(defn load-core [repl-env opts]
-  (doseq [ijs (-> (deps/sorted-deps
-                    (ana-api/current-state) 'cljs.core opts)
-                (deps/with-out-files opts))]
-    (send-file repl-env (:out-file ijs)
-      {:ns (-> ijs :provides first)})))
-
-(defn init-js-env
-  ([repl-env]
-   (init-js-env repl-env repl/*repl-opts*))
-  ([{:keys [options] :as repl-env} opts]
-   (let [output-dir (io/file (:output-dir opts))
-         cljs-deps  (io/file output-dir "cljs_deps.js")
-         repl-deps  (io/file output-dir "krell_repl_deps.js")]
-     ;; Only ever load goog base *once*, all the dep
-     ;; graph stuff is there an it needs to be preserved
-     (if-not (base-loaded? repl-env)
-       (do
-         (when (:krell/verbose options)
-           (println "BOOTSTRAP: Load GCL base files"))
-         (send-file repl-env (io/file output-dir "goog/base.js") opts)
-         (send-file repl-env (io/file output-dir "goog/deps.js") opts))
-       (when (:krell/verbose options)
-         (println "BOOTSTRAP: GCL base files already present")))
-     (send-file repl-env repl-deps opts)
-     (when (.exists cljs-deps)
-       (send-file repl-env cljs-deps opts))
-     (if-not (core-loaded? repl-env)
-       (do
-         (when (:krell/verbose options)
-           (println "BOOTSTRAP: Load cljs.core"))
-         ;; We cannot rely on goog.require because the debug loader assumes
-         ;; you can load script synchronously which isn't possible in React
-         ;; Native. Push core to the client and wait till everything is received
-         ;; before proceeding
-         (load-core repl-env opts))
-       (when (:krell/verbose options)
-         (println "BOOTSTRAP: cljs.core already present"))))))
 
 (defn modified-source?
   [{:keys [file-index] :as repl-env} {:keys [type path]}]
@@ -201,7 +120,8 @@
   (when-not (:main opts)
     (throw (ex-info (str ":main namespace not supplied in build configuration")
              {:krell/error :main-ns-missing})))
-  (let [src      (util/to-file path)
+  (let [reloads  (atom [])
+        src      (util/to-file path)
         path-str (.getPath src)]
     (when (and (modified-source? repl-env evt)
                (#{".cljc" ".cljs"} (subs path-str (.lastIndexOf path-str "."))))
@@ -242,7 +162,7 @@
                                       (.getMessage t)))
                                   nil))]
                   (if (empty? @warns)
-                    (send-file repl-env dest {:reload true})
+                    (swap! reloads conj (munge (:ns ns-info)))
                     ;; TODO: it may be that warns strings have chars that will break console.warn ?
                     ;; TODO: also warn at REPL
                     (let [pre (str "Could not reload " (:ns ns-info) ":")]
@@ -256,8 +176,11 @@
                       (str deps-js (build-api/goog-dep-string opts ijs'))
                       deps-js)))
                 (rn-eval repl-env deps-js)))
-            ;; notify client we're done
-            (rn-eval repl-env nil {:type "reload"})))
+            ;; have the client queue the reloads
+            (rn-eval repl-env
+              (str
+                (apply str "KRELL_RELOAD(["
+                  (map (comp pr-str str) (interpose "," @reloads))) "])"))))
         (catch Throwable t
           (println t))))))
 
@@ -279,11 +202,7 @@
      (.start
        (Thread.
          (bound-fn []
-           (server-loop repl-env (net/create-server-socket port)))))
-     (.start
-       (Thread.
-         (bound-fn []
-           (send-file-loop repl-env)))))
+           (server-loop repl-env (net/create-server-socket port))))))
    (while (not @socket)
      (Thread/sleep 500))
    (.start (Thread. (bound-fn [] (event-loop repl-env))))
@@ -295,27 +214,7 @@
          ;; the compiler one are the original ones
          (bound-fn [e] (recompile repl-env e opts))
          (:watch-dirs options))
-       (watcher/watch)))
-   ;; Compare cache w/ client
-   (cache-compare repl-env opts)
-   ;; compile cljs.core & its dependencies, goog/base.js must be available
-   ;; for bootstrap to load, use new closure/compile as it can handle
-   ;; resources in JARs
-   (let [output-dir (io/file (:output-dir opts))
-         core       (io/resource "cljs/core.cljs")
-         core-js    (closure/compile core
-                      (assoc opts
-                        :output-file
-                        (closure/src-file->target-file
-                          core (dissoc opts :output-dir))))
-         deps       (closure/add-dependencies opts core-js)
-         repl-deps  (io/file output-dir "krell_repl_deps.js")]
-     ;; output unoptimized code and only the deps file for all compiled
-     ;; namespaces, we don't need the bootstrap target file
-     (apply closure/output-unoptimized
-       (assoc (assoc opts :target :none)
-         :output-to (.getPath repl-deps)) deps)
-     (init-js-env repl-env opts))))
+       (watcher/watch)))))
 
 (defn choose-first-opt
   [cfg value]
@@ -336,8 +235,8 @@
 
 (defn krell-compile
   [repl-env-var {:keys [repl-env-options options] :as cfg}]
-  (gen/write-index-js options)
   (gen/write-repl-js (apply repl-env-var (mapcat identity repl-env-options)) options)
+  (gen/write-index-js options)
   (let [opt-level (:optimizations options)]
     (ana-api/with-passes
       (into ana-api/default-passes passes/custom-passes)
@@ -352,7 +251,8 @@
                  (gen/write-krell-npm-deps-js (passes/all-requires analysis) options)))
             (not (or (= :none opt-level) (nil? opt-level)))
             (assoc-in [:options :output-wrapper]
-              (fn [source] (str source (gen/krell-main-js options))))))))))
+              (fn [source] (str source (gen/krell-main-js options)))))))))
+  (gen/write-closure-bootstrap options))
 
 (defrecord KrellEnv [options file-index socket state]
   repl/IReplEnvOptions

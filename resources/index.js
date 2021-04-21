@@ -7,7 +7,7 @@ import {
     Text
 } from 'react-native';
 import {name as appName} from './app.json';
-import {krellUpdateRoot, krellStaleRoot, onKrellReload} from './$KRELL_OUTPUT_TO';
+import {krellUpdateRoot, onKrellReload} from './$KRELL_OUTPUT_TO';
 
 let plainStyle = {
     flex: 1,
@@ -23,7 +23,7 @@ let plainStyle = {
 class KrellRoot extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {loaded: false, stale: false, root: null, tx: 0};
+        this.state = {loaded: false, root: null, tx: 0};
     }
 
     render() {
@@ -34,31 +34,20 @@ class KrellRoot extends React.Component {
                 </View>
             );
         } else {
-            if (this.state.stale) {
-                return (
-                    <View style={plainStyle}>
-                        <Text>Application is stale. Refresh to get the latest.</Text>
-                    </View>
-                );
-            } else {
-                return this.state.root(this.props);
-            }
+            return this.state.root(this.props);
         }
     }
 
     componentDidMount() {
         let krell = this;
+        // Mounting the app the first time
         krellUpdateRoot((appRoot) => {
             let newState = Object.assign({}, krell.state);
             newState.root = appRoot;
             newState.loaded = true;
             krell.setState(newState);
         });
-        krellStaleRoot(() => {
-            let newState = Object.assign({}, krell.state);
-            newState.stale = true;
-            krell.setState(newState);
-        });
+        // Hot reloading
         onKrellReload(() => {
             krell.setState((state, props) => {
                 let newState = Object.assign({}, state);
