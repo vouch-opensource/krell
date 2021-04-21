@@ -18,9 +18,18 @@ var loadQueue = [];
 var isLoading = false;
 
 const loadFile = (path) => {
-    return fetch("http://" + METRO_IP + ":" + METRO_PORT + "/" + path)
-        .then(function(res) {
-            evaluate(res.text);
+    let url = "http://" + METRO_IP + ":" + METRO_PORT + "/" + path;
+    return fetch(url)
+        .then(response => response.text())
+        .then(function(source) {
+            try {
+                evaluate(source);
+            } catch(e) {
+                console.error("Could not evaluate", url);
+            }
+        })
+        .catch(function(err) {
+            console.error("Could not load", url, err);
         });
 };
 
@@ -29,7 +38,7 @@ const loadPending = async () => {
         if(loadQueue.length === 0) {
             break;
         }
-        let next = loadQueue.unshift();
+        let next = loadQueue.shift();
         await loadFile(next);
     }
     isLoading = false;
@@ -78,6 +87,7 @@ evaluate($CLJS_DEPS_JS);
 // NOTE: CLOSURE_LOAD_FILE_SYNC not needed as ClojureScript now transpiles
 // offending goog.module files that would need runtime transpiler support
 global.CLOSURE_IMPORT_SCRIPT = function(path, optContents) {
+    console.log("CLOSURE_IMPORT_SCRIPT", path);
     if (optContents) {
         try {
             evaluate(optContents);
