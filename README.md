@@ -58,14 +58,13 @@ Install the REPL support dependencies:
 clj -m cljs.main --install-deps
 ```
 
+If this fails try:
+
+```
+clj -m cljs.main -co "{:deps-cmd \"yarn\"}" --install-deps
+```
+
 Switch into the `ios` directory of your project and run `pod install`.
-
-On Android you should modify your AsyncStorage settings in `android/gradle.properties`.
-This is only necessary for REPL driven development:
-
-```
-AsyncStorage_db_size_in_MB=256
-```
 
 ## REPL
 
