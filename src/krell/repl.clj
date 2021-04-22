@@ -285,7 +285,7 @@
                       {:group ::cli/main
                        :fn    ip-opt
                        :arg   "string"
-                       :doc   (str "Sets IP address to bind to connect to.")}
+                       :doc   (str "Sets IP address to connect to.")}
                       ["-p" "--port"]
                       {:group ::cli/main
                        :fn    port-opt
