@@ -13,7 +13,6 @@ var RECONNECT_INTERVAL = 3000;
 var SERVER_IP = "$KRELL_SERVER_IP";
 var SERVER_PORT = $KRELL_SERVER_PORT;
 
-const IS_ANDROID = Platform.OS === "android";
 const KRELL_VERBOSE = $KRELL_VERBOSE;
 
 var reloadListeners = [];
@@ -107,11 +106,6 @@ const handleMessage = (socket, data) => {
                 })+"\0"
             );
         }
-
-        // TODO: need to move this to new HTTP source file loader
-        if (req) {
-            notifyListeners(req);
-        }
     }
 };
 
@@ -161,8 +155,7 @@ const tryConnection = () => {
         }, function(address) {
             console.log("Connected to Krell REPL Server");
             CONNECTED = true;
-            // one cljs.core is available can monkeypatch Closure
-            // and setup printing
+            // once cljs.core loaded, can monkey-patch Closure and setup printing
             onSourceLoad(goog.debugLoader_.getPathFromDeps_("cljs.core"), () => {
                 bootstrapRepl(socket);
             });
