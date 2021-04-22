@@ -159,7 +159,7 @@
             (rn-eval repl-env
               (str
                 (apply str "KRELL_RELOAD(["
-                  (map (comp pr-str str) (interpose "," @reloads))) "])"))))
+                  (interpose "," (map (comp pr-str str) @reloads))) "])"))))
         (catch Throwable t
           (println t))))))
 
