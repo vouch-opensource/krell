@@ -193,7 +193,22 @@
          ;; the compiler one are the original ones
          (bound-fn [e] (recompile repl-env e opts))
          (:watch-dirs options))
-       (watcher/watch)))))
+       (watcher/watch)))
+   ;; NOTE: duplicated from recompile above
+   ;; TODO: should be able to run this on another thread
+   (when-let [main-ns (:main opts)]
+     (let [state   (ana-api/current-state)
+           ns-info (ana-api/parse-ns (build-api/ns->source main-ns))
+           the-ns  (:ns ns-info)
+           ancs    (deps/dependents the-ns
+                     (deps/deps->graph
+                       (deps/all-deps state main-ns opts))
+                     (-> repl-env :options :recompile))
+           all     (concat [ns-info] ancs)]
+       (build-api/handle-js-modules state
+         (build-api/dependency-order
+           (build-api/add-dependency-sources all opts))
+         opts)))))
 
 (defn choose-first-opt
   [cfg value]
