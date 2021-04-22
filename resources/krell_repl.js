@@ -63,20 +63,23 @@ const errString = (err) => {
 };
 
 const handleMessage = (socket, data) => {
-    var req = null,
-        err = null,
-        ret = null;
+    var err = null,
+        ret = null,
+        msg = null;
 
     data = data.replace(/\0/g, "");
 
     try {
-        let msg = JSON.parse(data);
-        req = msg.request;
+        msg = JSON.parse(data);
         if(msg.form) {
             ret = evaluate(msg.form);
         }
     } catch (e) {
-        console.error(e);
+        if(msg && msg.form) {
+            console.error("Could not evaluate form:", msg.form, e);
+        } else {
+            console.error("Invalid message:", msg, e);
+        }
         err = e;
     }
 
