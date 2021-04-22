@@ -10,10 +10,6 @@ const evaluate = eval;
 global.CLOSURE_BASE_PATH = "$CLOSURE_BASE_PATH";
 global.CLOSURE_NO_DEPS = true;
 
-function toPath(path) {
-    return CLOSURE_BASE_PATH.replace("goog/", "") + path;
-}
-
 var loadQueue = [];
 var isLoading = false;
 var libLoadListeners = {};
