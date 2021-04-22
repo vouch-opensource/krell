@@ -159,9 +159,13 @@ const tryConnection = () => {
             console.log("Connected to Krell REPL Server");
             CONNECTED = true;
             // once cljs.core loaded, can monkey-patch Closure and setup printing
-            onSourceLoad(goog.debugLoader_.getPathFromDeps_("cljs.core"), () => {
+            if(exists_(global, "cljs.core")) {
                 bootstrapRepl(socket);
-            });
+            } else {
+                onSourceLoad(goog.debugLoader_.getPathFromDeps_("cljs.core"), () => {
+                    bootstrapRepl(socket);
+                });
+            }
         });
         initSocket(socket);
     } else {
