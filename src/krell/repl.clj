@@ -19,7 +19,6 @@
 (def eval-lock (Object.))
 (def results-queue (LinkedBlockingQueue.))
 
-;; TODO: refactor this into send-message later
 (defn rn-eval
   "Evaluate a JavaScript string in the React Native REPL"
   ([repl-env js]
