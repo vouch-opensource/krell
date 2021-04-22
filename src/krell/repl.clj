@@ -210,6 +210,10 @@
            (build-api/add-dependency-sources all opts))
          opts)))))
 
+(defn ip-opt
+  [cfg value]
+  (assoc-in cfg [:repl-env-options :ip] value))
+
 (defn port-opt
   [cfg value]
   (assoc-in cfg [:repl-env-options :port] value))
@@ -225,24 +229,25 @@
 
 (defn krell-compile
   [repl-env-var {:keys [repl-env-options options] :as cfg}]
-  (gen/write-repl-js (apply repl-env-var (mapcat identity repl-env-options)) options)
-  (gen/write-index-js options)
-  (let [opt-level (:optimizations options)]
-    (ana-api/with-passes
-      (into ana-api/default-passes passes/custom-passes)
-      (binding [passes/*nses-with-requires* (atom #{})]
-        (cli/default-compile repl-env-var
-          (cond->
-            (assoc cfg
-              :post-compile-fn
-              #(let [nses (passes/cache-krell-requires @passes/*nses-with-requires* options)
-                     analysis (passes/load-analysis nses options)]
-                 (gen/write-assets-js (passes/all-assets analysis) options)
-                 (gen/write-krell-npm-deps-js (passes/all-requires analysis) options)))
-            (not (or (= :none opt-level) (nil? opt-level)))
-            (assoc-in [:options :output-wrapper]
-              (fn [source] (str source (gen/krell-main-js options)))))))))
-  (gen/write-closure-bootstrap options))
+  (let [repl-env (apply repl-env-var (mapcat identity repl-env-options))]
+    (gen/write-repl-js repl-env options)
+    (gen/write-index-js options)
+    (let [opt-level (:optimizations options)]
+      (ana-api/with-passes
+        (into ana-api/default-passes passes/custom-passes)
+        (binding [passes/*nses-with-requires* (atom #{})]
+          (cli/default-compile repl-env-var
+            (cond->
+              (assoc cfg
+                :post-compile-fn
+                #(let [nses (passes/cache-krell-requires @passes/*nses-with-requires* options)
+                       analysis (passes/load-analysis nses options)]
+                   (gen/write-assets-js (passes/all-assets analysis) options)
+                   (gen/write-krell-npm-deps-js (passes/all-requires analysis) options)))
+              (not (or (= :none opt-level) (nil? opt-level)))
+              (assoc-in [:options :output-wrapper]
+                (fn [source] (str source (gen/krell-main-js options)))))))))
+    (gen/write-closure-bootstrap repl-env options)))
 
 (defrecord KrellEnv [options file-index socket state]
   repl/IReplEnvOptions
@@ -276,6 +281,11 @@
                        :fn    watch-dirs-opt
                        :arg   "files"
                        :doc   (str "A platform separated list of directories to watch for REPL hot-reloading")}
+                      ["-ip" "--ip"]
+                      {:group ::cli/main
+                       :fn    ip-opt
+                       :arg   "string"
+                       :doc   (str "Sets IP address to bind to connect to.")}
                       ["-p" "--port"]
                       {:group ::cli/main
                        :fn    port-opt
