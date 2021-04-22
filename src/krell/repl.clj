@@ -210,10 +210,6 @@
            (build-api/add-dependency-sources all opts))
          opts)))))
 
-(defn choose-first-opt
-  [cfg value]
-  (assoc-in cfg [:repl-env-options :choose-first] (= value "true")))
-
 (defn port-opt
   [cfg value]
   (assoc-in cfg [:repl-env-options :port] value))
@@ -275,11 +271,6 @@
                                 cfg)
                        :arg   "name"
                        :doc   (str "The JavaScript target. Supported values: node or nodejs.")}
-                      ["-f" "--choose-first"]
-                      {:group ::cli/main
-                       :fn    choose-first-opt
-                       :arg   "bool"
-                       :doc   (str "Choose the first discovered available REPL service.")}
                       ["-wd" "--watch-dirs"]
                       {:group ::cli/main
                        :fn    watch-dirs-opt
