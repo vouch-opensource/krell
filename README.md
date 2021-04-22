@@ -20,9 +20,9 @@ likely most widely used. Unfortunately, re-natal is Leiningen-centric and has
 some historical design decisions that lead to a stateful CLI API. Still, it is a
 direct inspiration for Krell, and re-natal solved many tricky edge-cases early
 on. shadow-cljs also offers react-native integration, but provides that as part
-of a full featured package rather than an a la carte tool.
+of a full featured package rather than an à la carte tool.
 
-Krell fills the gap by providing a stand alone tool with few dependencies. It
+Krell fills the gap by providing a standalone tool with few dependencies. It
 does only one thing - extend the standard ClojureScript compiler to make
 developing React Native simpler (and easier).
 
@@ -74,13 +74,15 @@ First build your project:
 clj -m krell.main -v -co build.edn -c
 ```
 
-Start a REPL:
+Run your React Native project and verify that it works. 
+
+You can start a REPL and connect to the running app at any time:
 
 ```
 clj -m krell.main -co build.edn -r
 ```
 
-You can of course combine these steps just as with plain `cljs.main`:
+You can of course combine these steps just as with plain `cljs.main`.
 
 ```
 clj -m krell.main -co build.edn -c -r
@@ -94,7 +96,7 @@ must use static relative paths. The additional support for Node.js dependencies
 is useful when transitioning away from re-natal to Krell.
 
 It's important to note that adding a new asset or new Node library currently 
-requires restarting the REPL.
+requires recompiling the project.
 
 Other than that there are no other limitations. The handling of `js/require` is
 implemented as an analyzer pass so if you want to create macros to generate
