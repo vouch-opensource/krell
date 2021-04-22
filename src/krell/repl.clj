@@ -210,9 +210,9 @@
            (build-api/add-dependency-sources all opts))
          opts)))))
 
-(defn ip-opt
+(defn host-opt
   [cfg value]
-  (assoc-in cfg [:repl-env-options :ip] value))
+  (assoc-in cfg [:repl-env-options :host] value))
 
 (defn port-opt
   [cfg value]
@@ -275,28 +275,28 @@
                                 (assert (#{"node" "nodejs"} target) "Invalid --target, only nodejs supported")
                                 cfg)
                        :arg   "name"
-                       :doc   (str "The JavaScript target. Supported values: node or nodejs.")}
+                       :doc   (str "The JavaScript target. Supported values: node or nodejs")}
                       ["-wd" "--watch-dirs"]
                       {:group ::cli/main
                        :fn    watch-dirs-opt
                        :arg   "files"
                        :doc   (str "A platform separated list of directories to watch for REPL hot-reloading")}
-                      ["-ip" "--ip"]
+                      ["-h" "--host"]
                       {:group ::cli/main
-                       :fn    ip-opt
+                       :fn    host-opt
                        :arg   "string"
-                       :doc   (str "Sets IP address to connect to.")}
+                       :doc   (str "Set host address to connect to")}
                       ["-p" "--port"]
                       {:group ::cli/main
                        :fn    port-opt
                        :arg   "number"
-                       :doc   (str "Sets port for target clients to bind to.")}
+                       :doc   (str "Set port for target clients to bind to")}
                       ["-rc" "--recompile"]
                       {:group ::cli/main
                        :fn    recompile-opt
                        :arg   "string"
                        :doc   (str "Flag for recompile strategy. Supported values: direct, all. If direct, Krell will only"
-                                   "recompile namespaces that directly depend on the changed one. Defaults to \"direct\".")}}
+                                   "recompile namespaces that directly depend on the changed one. Defaults to \"direct\"")}}
                      :main
                      {["-s" "--serve"]
                       {:fn (fn [cfg opt]
