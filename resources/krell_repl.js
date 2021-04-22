@@ -132,7 +132,7 @@ const initSocket = (socket) => {
 
     socket.on("error", error => {
         socket.destroy();
-        console.log("An error occurred with client socket:", error);
+        //console.log("An error occurred with client socket:", error);
     });
 
     socket.on("close", error => {
