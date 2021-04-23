@@ -21,32 +21,26 @@
 
 (defn rn-eval
   "Evaluate a JavaScript string in the React Native REPL"
-  ([repl-env js]
-   (rn-eval repl-env js nil))
-  ([{:keys [options] :as repl-env} js request]
-   (locking eval-lock
-     (let [{:keys [out]} @(:socket repl-env)]
-       (net/write out
-         (json/write-str
-           (merge {:type "eval" :form js}
-             ;; if there was client driven request then pass on this
-             ;; information back to the client
-             (when request {:request request}))))
-       (let [result (.take results-queue)
-             ret (condp = (:status result)
-                   "success"
-                   {:status :success
-                    :value  (:value result)}
+  [repl-env js]
+  (locking eval-lock
+    (let [{:keys [out]} @(:socket repl-env)]
+      (net/write out
+        (json/write-str {:type "eval" :form js}))
+      (let [result (.take results-queue)
+            ret (condp = (:status result)
+                  "success"
+                  {:status :success
+                   :value (:value result)}
 
-                   "exception"
-                   {:status :exception
-                    :value  (:value result)}
-                   (throw
-                     (ex-info
-                       (str "Unexpected message type: "
-                         (pr-str (:status result)))
-                       {:queue-value result})))]
-         ret)))))
+                  "exception"
+                  {:status :exception
+                   :value (:value result)}
+                  (throw
+                    (ex-info
+                      (str "Unexpected message type: "
+                        (pr-str (:status result)))
+                      {:queue-value result})))]
+        ret))))
 
 (defn load-javascript
   "Load a Closure JavaScript file into the React Native REPL"
