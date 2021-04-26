@@ -240,7 +240,8 @@
               (not (or (= :none opt-level) (nil? opt-level)))
               (assoc-in [:options :output-wrapper]
                 (fn [source] (str source (gen/krell-main-js options)))))))))
-    (when (= :none (:optimizations options))
+    (when (or (nil? (:optimizations options))
+              (= :none (:optimizations)))
       (gen/write-closure-bootstrap repl-env options))
     (gen/write-index-js options)))
 
