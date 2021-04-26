@@ -240,7 +240,8 @@
               (not (or (= :none opt-level) (nil? opt-level)))
               (assoc-in [:options :output-wrapper]
                 (fn [source] (str source (gen/krell-main-js options)))))))))
-    (gen/write-closure-bootstrap repl-env options)
+    (when (= :none (:optimizations options))
+      (gen/write-closure-bootstrap repl-env options))
     (gen/write-index-js options)))
 
 (defrecord KrellEnv [options file-index socket state]
