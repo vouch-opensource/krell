@@ -173,7 +173,9 @@ const tryConnection = () => {
     }
 };
 
-tryConnection();
+if(!process.env["KRELL_NO_REPL"]) {
+    tryConnection();
+}
 
 module.exports = {
     evaluate: evaluate,
