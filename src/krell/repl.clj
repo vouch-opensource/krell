@@ -225,7 +225,6 @@
   [repl-env-var {:keys [repl-env-options options] :as cfg}]
   (let [repl-env (apply repl-env-var (mapcat identity repl-env-options))]
     (gen/write-repl-js repl-env options)
-    (gen/write-index-js options)
     (let [opt-level (:optimizations options)]
       (ana-api/with-passes
         (into ana-api/default-passes passes/custom-passes)
@@ -241,7 +240,8 @@
               (not (or (= :none opt-level) (nil? opt-level)))
               (assoc-in [:options :output-wrapper]
                 (fn [source] (str source (gen/krell-main-js options)))))))))
-    (gen/write-closure-bootstrap repl-env options)))
+    (gen/write-closure-bootstrap repl-env options)
+    (gen/write-index-js options)))
 
 (defrecord KrellEnv [options file-index socket state]
   repl/IReplEnvOptions
