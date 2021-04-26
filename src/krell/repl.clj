@@ -241,7 +241,7 @@
               (assoc-in [:options :output-wrapper]
                 (fn [source] (str source (gen/krell-main-js options)))))))))
     (when (or (nil? (:optimizations options))
-              (= :none (:optimizations)))
+              (= :none (:optimizations options)))
       (gen/write-closure-bootstrap repl-env options))
     (gen/write-index-js options)))
 
