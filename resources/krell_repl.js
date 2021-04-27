@@ -1,5 +1,7 @@
 import { Platform } from "react-native";
 import TcpSocket from "react-native-tcp-socket";
+import DeviceInfo from "react-native-device-info";
+import { krellPortMap } from '../app.json';
 import {
     bootstrapRepl,
     evaluate,
@@ -11,11 +13,13 @@ var CONNECTED = false;
 var RECONNECT_INTERVAL = 3000;
 
 var SERVER_IP = "$KRELL_SERVER_IP";
-var SERVER_PORT = $KRELL_SERVER_PORT;
+var SERVER_PORT = krellPortMap ? krellPortMap[DeviceInfo.getDeviceId()] : $KRELL_SERVER_PORT;
 
 const KRELL_VERBOSE = $KRELL_VERBOSE;
 
 var reloadListeners = [];
+
+console.log("Krell sez howdy, Device ID:", DeviceInfo.getDeviceId());
 
 // =============================================================================
 // REPL Server

@@ -180,14 +180,15 @@
      (Thread/sleep 500))
    (.start (Thread. (bound-fn [] (event-loop repl-env))))
    ;; create and start the watcher
-   (swap! state assoc :watcher
-     (doto
-       (apply watcher/create
-         ;; have to pass the processed opts
-         ;; the compiler one are the original ones
-         (bound-fn [e] (recompile repl-env e opts))
-         (:watch-dirs options))
-       (watcher/watch)))
+   (when (-> repl-env :options :recompile)
+     (swap! state assoc :watcher
+       (doto
+         (apply watcher/create
+           ;; have to pass the processed opts
+           ;; the compiler one are the original ones
+           (bound-fn [e] (recompile repl-env e opts))
+           (:watch-dirs options))
+         (watcher/watch))))
    ;; NOTE: duplicated from recompile above
    ;; TODO: should be able to run this on another thread
    (when-let [main-ns (:main opts)]
@@ -197,7 +198,7 @@
            ancs    (deps/dependents the-ns
                      (deps/deps->graph
                        (deps/all-deps state main-ns opts))
-                     (-> repl-env :options :recompile))
+                     :direct)
            all     (concat [ns-info] ancs)]
        (build-api/handle-js-modules state
          (build-api/dependency-order
@@ -210,11 +211,14 @@
 
 (defn port-opt
   [cfg value]
-  (assoc-in cfg [:repl-env-options :port] value))
+  (assoc-in cfg [:repl-env-options :port]
+    (cond-> value
+      (string? value) Integer/parseInt)))
 
 (defn recompile-opt
   [cfg value]
-  (assoc-in cfg [:repl-env-options :recompile] (keyword value)))
+  (assoc-in cfg [:repl-env-options :recompile]
+    (if (= "false" value) false (keyword value))))
 
 (defn watch-dirs-opt
   [cfg value]
@@ -291,8 +295,10 @@
                       {:group ::cli/main
                        :fn    recompile-opt
                        :arg   "string"
-                       :doc   (str "Flag for recompile strategy. Supported values: direct, all. If direct, Krell will only"
-                                   "recompile namespaces that directly depend on the changed one. Defaults to \"direct\"")}}
+                       :doc   (str "Flag for recompile strategy. Supported values: direct, all, or false."
+                                   " If direct, Krell will only recompile namespaces that directly depend"
+                                   " on the changed one. If false, Krell will not recompile and reload."
+                                   " Defaults to direct")}}
                      :main
                      {["-s" "--serve"]
                       {:fn (fn [cfg opt]
