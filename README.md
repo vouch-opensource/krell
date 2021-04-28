@@ -102,7 +102,7 @@ Other than that there are no other limitations. The handling of `js/require` is
 implemented as an analyzer pass so if you want to create macros to generate
 asset requires, that will work.
 
-## Mutiple App Instance Development
+## Multiple App Instance Development
 
 Sometimes it's necessary run multiple instances of the same application during 
 development - i.e. a chat/messaging application. When Krell starts up it logs
