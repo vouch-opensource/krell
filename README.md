@@ -131,8 +131,8 @@ Then you can connect to it like so:
 clj -M -m krell.main -co build.edn -p 5002 -r
 ```
 
-*You should only have **one** hotloading REPL*. You can disable hot reloading
-for like so:
+*You should only have **one** hotloading REPL*. You can disable hot reloading 
+like so:
 
 ```
 clj -M -m krell.main -co build.edn -p 5002 -rc false -r
