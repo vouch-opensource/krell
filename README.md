@@ -102,6 +102,42 @@ Other than that there are no other limitations. The handling of `js/require` is
 implemented as an analyzer pass so if you want to create macros to generate
 asset requires, that will work.
 
+## Mutiple App Instance Development
+
+Sometimes it's necessary run multiple instances of the same application during 
+development - i.e. a chat/messaging application. When Krell starts up it logs
+the device ID, for example:
+
+```
+Krell sez howdy, Device ID: iPhone12,3
+```
+
+You can use this device ID to assign a specific Krell port in your `app.json`,
+for example:
+
+```
+{
+  "name": "MyAwesomeProject",
+  "displayName": "My Awesome Project",
+  "krellPortMap": {
+    "iPhone12,3": 5002
+  }
+}
+```
+
+Then you can connect to it like so:
+
+```
+clj -M -m krell.main -co build.edn -p 5002 -r
+```
+
+*You should only have **one** hotloading REPL*. You can disable hot reloading
+for like so:
+
+```
+clj -M -m krell.main -co build.edn -p 5002 -rc false -r
+```
+
 ## Examples
 
 See the [Reagent example tutorial](https://github.com/vouchio/krell/wiki/Reagent-Tutorial) 
