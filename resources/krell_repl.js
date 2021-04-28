@@ -13,7 +13,7 @@ var CONNECTED = false;
 var RECONNECT_INTERVAL = 3000;
 
 var SERVER_IP = "$KRELL_SERVER_IP";
-var SERVER_PORT = krellPortMap ? krellPortMap[DeviceInfo.getDeviceId()] : $KRELL_SERVER_PORT;
+var SERVER_PORT = krellPortMap ? krellPortMap[DeviceInfo.getDeviceId()] || $KRELL_SERVER_PORT : $KRELL_SERVER_PORT;
 
 const KRELL_VERBOSE = $KRELL_VERBOSE;
 
