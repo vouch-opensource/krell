@@ -8,7 +8,7 @@ as a simple set of defaults over the standard ClojureScript compiler.
 
 ```
 io.vouch/krell {:git/url "https://github.com/vouch-opensource/krell"
-                :sha "2f95518a7fd77265f32b6b84b5bc09ec54a402fd"}
+                :sha "0d25830bd0bf02baf272b9c60d3edefc6766ef24"}
 ```
 
 ## Why Krell?
