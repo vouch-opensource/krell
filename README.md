@@ -55,13 +55,13 @@ documentation for the REPL support dependencies:
 Install the REPL support dependencies:
 
 ```
-clj -m cljs.main --install-deps
+clj -M -m cljs.main --install-deps
 ```
 
 If this fails try:
 
 ```
-clj -m cljs.main -co "{:deps-cmd \"yarn\"}" --install-deps
+clj -M -m cljs.main -co "{:deps-cmd \"yarn\"}" --install-deps
 ```
 
 Switch into the `ios` directory of your project and run `pod install`.
@@ -71,7 +71,7 @@ Switch into the `ios` directory of your project and run `pod install`.
 First build your project:
 
 ```
-clj -m krell.main -v -co build.edn -c
+clj -M -m krell.main -v -co build.edn -c
 ```
 
 Run your React Native project and verify that it works. 
@@ -79,13 +79,13 @@ Run your React Native project and verify that it works.
 You can start a REPL and connect to the running app at any time:
 
 ```
-clj -m krell.main -co build.edn -r
+clj -M -m krell.main -co build.edn -r
 ```
 
 You can of course combine these steps just as with plain `cljs.main`.
 
 ```
-clj -m krell.main -co build.edn -c -r
+clj -M -m krell.main -co build.edn -c -r
 ```
 
 ## Assets & Arbitrary Node Library Requires
