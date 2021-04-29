@@ -120,6 +120,7 @@ global.KRELL_RELOAD = async function(nses) {
     for(let ns of nses) {
         let path = goog.debugLoader_.getPathFromDeps_(ns);
         await loadFile(path);
+        console.log("Reloaded", ns);
     }
     notifyReloadListeners();
 }
