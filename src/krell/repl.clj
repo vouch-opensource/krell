@@ -117,8 +117,6 @@
               (if-let [ijs (first xs)]
                 (let [warns   (atom [])
                       handler (collecting-warning-handler warns)
-                      dest    (build-api/target-file-for-cljs-ns
-                                (:ns ijs) (:output-dir opts))
                       ijs'    (try
                                 (ana-api/with-warning-handlers [handler]
                                   (ana-api/with-passes
@@ -135,10 +133,10 @@
                                       (.getMessage t)))
                                   nil))]
                   (if (empty? @warns)
-                    (swap! reloads conj (munge (:ns ns-info)))
+                    (swap! reloads conj (munge (:ns ijs)))
                     ;; TODO: it may be that warns strings have chars that will break console.warn ?
                     ;; TODO: also warn at REPL
-                    (let [pre (str "Could not reload " (:ns ns-info) ":")]
+                    (let [pre (str "Could not recompile " (:ns ijs) ":")]
                       (warn-client repl-env
                         (string/join "\n" (concat [pre] @warns)))))
                   (recur
