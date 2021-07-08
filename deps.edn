@@ -10,4 +10,4 @@
                     :exec-fn      deps-deploy.deps-deploy/deploy
                     :exec-args    {:installer :remote
                                    :sign-releases? true
-                                   :artifact "deps-deploy.jar"}}}}
+                                   :artifact "krell.jar"}}}}
