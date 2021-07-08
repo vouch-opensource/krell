@@ -2,4 +2,7 @@
  :deps {org.clojure/clojurescript {:mvn/version "1.10.844"}
         io.methvin/directory-watcher {:mvn/version "0.15.0"}}
  :aliases {:repl {:extra-paths ["test"]
-                  :extra-deps {org.slf4j/slf4j-simple {:mvn/version "1.7.30"}}}}}
+                  :extra-deps {org.slf4j/slf4j-simple {:mvn/version "1.7.30"}}}
+           :jar  {:replace-deps {com.github.seancorfield/depstar {:mvn/version "2.1.245"}}
+                  :exec-fn hf.depstar/jar
+                  :exec-args {}}}}
