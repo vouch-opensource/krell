@@ -1,8 +1,13 @@
 {:paths ["src" "resources"]
- :deps {org.clojure/clojurescript {:mvn/version "1.10.844"}
+ :deps {org.clojure/clojurescript    {:mvn/version "1.10.844"}
         io.methvin/directory-watcher {:mvn/version "0.15.0"}}
- :aliases {:repl {:extra-paths ["test"]
-                  :extra-deps {org.slf4j/slf4j-simple {:mvn/version "1.7.30"}}}
-           :jar  {:replace-deps {com.github.seancorfield/depstar {:mvn/version "2.1.245"}}
-                  :exec-fn hf.depstar/jar
-                  :exec-args {}}}}
+ :aliases {:repl   {:extra-paths  ["test"]
+                    :extra-deps   {org.slf4j/slf4j-simple {:mvn/version "1.7.30"}}}
+           :jar    {:replace-deps {com.github.seancorfield/depstar {:mvn/version "2.1.245"}}
+                    :exec-fn      hf.depstar/jar
+                    :exec-args    {}}
+           :deploy {:extra-deps   {slipset/deps-deploy {:mvn/version "RELEASE"}}
+                    :exec-fn      deps-deploy.deps-deploy/deploy
+                    :exec-args    {:installer :remote
+                                   :sign-releases? true
+                                   :artifact "deps-deploy.jar"}}}}
