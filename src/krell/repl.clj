@@ -227,10 +227,6 @@
   [repl-env-var {:keys [repl-env-options options] :as cfg}]
   (let [repl-env (apply repl-env-var (mapcat identity repl-env-options))]
     (gen/write-repl-js repl-env options)
-    (when (or (nil? (:optimizations options))
-              (= :none (:optimizations options)))
-      (gen/write-closure-bootstrap repl-env options))
-    (gen/write-index-js options)
     ;; everything that doesn't need analysis needs to be written before the
     ;; following as cli/default-compile may invoke the REPL
     (let [opt-level (:optimizations options)]
@@ -244,7 +240,11 @@
                 #(let [nses (passes/cache-krell-requires @passes/*nses-with-requires* options)
                        analysis (passes/load-analysis nses options)]
                    (gen/write-assets-js (passes/all-assets analysis) options)
-                   (gen/write-krell-npm-deps-js (passes/all-requires analysis) options)))
+                   (gen/write-krell-npm-deps-js (passes/all-requires analysis) options)
+                   (when (or (nil? (:optimizations options))
+                             (= :none (:optimizations options)))
+                     (gen/write-closure-bootstrap repl-env options))
+                   (gen/write-index-js options)))
               (not (or (= :none opt-level) (nil? opt-level)))
               (assoc-in [:options :output-wrapper]
                 (fn [source] (str source (gen/krell-main-js options)))))))))))
