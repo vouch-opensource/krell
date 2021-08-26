@@ -7,7 +7,7 @@ as a simple set of defaults over the standard ClojureScript compiler.
 ## Releases & Dependency Information
 
 ```
-io.vouch/krell {:mvn/version "0.5.0"}
+io.vouch/krell {:mvn/version "0.5.1"}
 ```
 
 ## Why Krell?
