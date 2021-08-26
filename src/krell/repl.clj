@@ -74,7 +74,9 @@
       (and (= :create type)
            (let [f (.getAbsoluteFile (util/to-file path))]
              (and (not (.isDirectory f))
-                  (< (get file-index f) (util/last-modified f)))))))
+                  (if-let [t (get @file-index f)]
+                    (< t (util/last-modified f))
+                    (boolean (swap! file-index assoc f (util/last-modified f)))))))))
 
 (defn collecting-warning-handler [state]
   (fn [warn-type env info]
@@ -96,7 +98,8 @@
   (let [reloads  (atom [])
         src      (util/to-file path)
         path-str (.getPath src)]
-    (when (and (modified-source? repl-env evt)
+    (when (and (< 0 (.length src)) ;; ignore newly created files
+               (modified-source? repl-env evt)
                (#{".cljc" ".cljs"} (subs path-str (.lastIndexOf path-str "."))))
       (try
         (let [state   (ana-api/current-state)
@@ -337,7 +340,7 @@
 
 (defn repl-env* [options]
   (let [watch-dirs (:watch-dirs options ["src"])
-        index      (file-index watch-dirs)]
+        index      (atom (file-index watch-dirs))]
     (KrellEnv.
       (merge
         {:port            5001
