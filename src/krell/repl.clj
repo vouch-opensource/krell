@@ -284,7 +284,7 @@
                        :fn    watch-dirs-opt
                        :arg   "files"
                        :doc   (str "A platform separated list of directories to watch for REPL hot-reloading")}
-                      ["-h" "--host"]
+                      ["-H" "--host"]
                       {:group ::cli/main
                        :fn    host-opt
                        :arg   "string"
