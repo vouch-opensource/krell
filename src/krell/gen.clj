@@ -19,8 +19,9 @@
 (defn write-index-js
   "Write the Krell index.js file which bootstraps the Krell application.
   See resources/index.js"
-  [opts]
-  (let [source   (slurp (io/resource "index.js"))
+  [repl-env opts]
+  (let [source   (slurp (or (io/resource (get-in repl-env [:options :index-js] "krell_index.js"))
+                            (io/resource "index.js")))
         out-file (io/file "index.js")]
     ;; TODO: just writing this out to the top level, can we allow this to be
     ;; in a different location?

@@ -221,6 +221,10 @@
   (assoc-in cfg [:repl-env-options :recompile]
     (if (= "false" value) false (keyword value))))
 
+(defn custom-index-opt
+  [cfg value]
+  (assoc-in cfg [:repl-env-options :index-js] value))
+
 (defn watch-dirs-opt
   [cfg value]
   (assoc-in cfg [:repl-env-options :watch-dirs]
@@ -247,7 +251,7 @@
                    (when (or (nil? (:optimizations options))
                              (= :none (:optimizations options)))
                      (gen/write-closure-bootstrap repl-env options))
-                   (gen/write-index-js options)))
+                   (gen/write-index-js repl-env options)))
               (not (or (= :none opt-level) (nil? opt-level)))
               (assoc-in [:options :output-wrapper]
                 (fn [source] (str source (gen/krell-main-js options)))))))))))
@@ -301,7 +305,12 @@
                        :doc   (str "Flag for recompile strategy. Supported values: direct, all, or false."
                                    " If direct, Krell will only recompile namespaces that directly depend"
                                    " on the changed one. If false, Krell will not recompile and reload."
-                                   " Defaults to direct")}}
+                                   " Defaults to direct")}
+                      ["-I" "--index-js"]
+                      {:group ::cli/main
+                       :fn    custom-index-opt
+                       :arg   "string"
+                       :doc   (str "Custom index.js resource on the classpath, i.e. Expo helpers etc.")}}
                      :main
                      {["-s" "--serve"]
                       {:fn (fn [cfg opt]
