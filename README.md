@@ -167,9 +167,6 @@ please file a Github issue!
   should make it pretty clear how to integrate with any particular ClojureScript 
   React library.
 
-* Basic React Native only, we're not interested in Expo or any other similar
-  tooling
-
 ## License ##
 
     Copyright (c) Vouch, Inc. All rights reserved. The use and
