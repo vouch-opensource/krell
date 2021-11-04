@@ -4,7 +4,7 @@
   <packaging>jar</packaging>
   <groupId>io.vouch</groupId>
   <artifactId>krell</artifactId>
-  <version>0.5.2</version>
+  <version>0.5.3</version>
   <name>krell</name>
   <dependencies>
     <dependency>

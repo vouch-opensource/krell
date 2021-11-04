@@ -7,7 +7,7 @@ as a simple set of defaults over the standard ClojureScript compiler.
 ## Releases & Dependency Information
 
 ```
-io.vouch/krell {:mvn/version "0.5.2"}
+io.vouch/krell {:mvn/version "0.5.3"}
 ```
 
 ## Why Krell?
@@ -100,6 +100,15 @@ requires recompiling the project.
 Other than that there are no other limitations. The handling of `js/require` is
 implemented as an analyzer pass so if you want to create macros to generate
 asset requires, that will work.
+
+## Extending Krell
+
+Integrating with tools like [Expo](https://expo.dev), and [Storybook.js](https://storybook.js.org)
+require providing a custom `index.js` file. This can be provided by one of two
+ways - either via the `--index-js` command line flag or by providing a file
+called `krell_index.js` on the classpath. The later method opens the door to
+extending Krell to other targets without requiring any configuration or wrapping
+of Krell at all.
 
 ## Multiple App Instance Development
 
