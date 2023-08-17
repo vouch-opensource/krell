@@ -1,6 +1,7 @@
 (ns krell.gen
   (:require [cljs.compiler.api :as comp-api]
             [clojure.data.json :as json]
+            [clojure.edn :as edn]
             [clojure.java.io :as io]
             [clojure.string :as string]
             [krell.assets :as assets]
@@ -29,7 +30,9 @@
     (write-if-different out-file
       (-> source
         (string/replace "$KRELL_OUTPUT_TO" (:output-to opts))
-        (string/replace "$KRELL_OUTPUT_DIR" (:output-dir opts))))))
+        (string/replace "$KRELL_OUTPUT_DIR" (:output-dir opts))
+        (string/replace "$KRELL_INDEX_IMPORTS"
+          (or (some-> (:krell/index-imports opts) io/resource slurp edn/read-string) ""))))))
 
 (defn write-closure-bootstrap
   [repl-env opts]
